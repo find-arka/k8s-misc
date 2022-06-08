@@ -4,7 +4,9 @@ Notes from miscellaneous K8s learning experiences
 > NOTE: This is strictly WIP documentation from my personal experience, if you are following this, and creating resources on public cloud, please be mindful and clean up to avoid unnecessary bills.
 
 ## API Gateway on a K8s cluster
+
 ### Step 1: AKS Cluster creation
+
 ```bash
 # Setup variables for ease and readability of the future commands
 LOCATION=$(az group list | jq -r '.[].location')
@@ -34,10 +36,13 @@ az aks get-credentials --resource-group $RG --name $MY_CLUSTER_NAME --admin
 # SUB_ID=$(az account subscription list | jq -r .[].subscriptionId)
 # az aks get-credentials --resource-group $RG --name $MY_CLUSTER_NAME --overwrite-existing --admin
 ```
+
 ### Step 1 Success Criteria
+
 - 3 nodes, each in different AZs should be created.
 - The nodes should have labels to imply that they are part of `infra` nodepool.
-```
+
+```bash
 $ kubectl get nodes -L agentpool,topology.kubernetes.io/zone
 NAME                            STATUS   ROLES   AGE   VERSION   AGENTPOOL   ZONE
 aks-infra-28829824-vmss000000   Ready    agent   30m   v1.22.6   infra       southcentralus-1
