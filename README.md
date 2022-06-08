@@ -5,7 +5,7 @@ Notes from miscellaneous K8s learning experiences
 
 ## API Gateway on a K8s cluster
 
-### Step 1: AKS Cluster creation
+#### Step 1: AKS Cluster creation
 
 ```bash
 # Setup variables for ease and readability of the future commands
@@ -37,7 +37,7 @@ az aks get-credentials --resource-group $RG --name $MY_CLUSTER_NAME --admin
 # az aks get-credentials --resource-group $RG --name $MY_CLUSTER_NAME --overwrite-existing --admin
 ```
 
-### Step 1 Success Criteria
+#### Step 1: Success Criteria
 
 - 3 nodes, each in different AZs should be created.
 - The nodes should have labels to imply that they are part of `infra` nodepool.
