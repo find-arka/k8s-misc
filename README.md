@@ -49,3 +49,15 @@ aks-infra-28829824-vmss000000   Ready    agent   30m   v1.22.6   infra       sou
 aks-infra-28829824-vmss000001   Ready    agent   30m   v1.22.6   infra       southcentralus-2
 aks-infra-28829824-vmss000002   Ready    agent   30m   v1.22.6   infra       southcentralus-3
 ```
+
+#### Step 1.1 setup shortcuts
+
+Thanks to [Kubernetes Cheat sheet](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
+```bash
+# setup autocomplete in bash into the current shell, bash-completion package should be installed first.
+source <(kubectl completion bash)
+# add autocomplete permanently to your bash shell.
+echo "source <(kubectl completion bash)" >> ~/.bashrc
+alias k=kubectl
+complete -F __start_kubectl k
+```
