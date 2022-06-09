@@ -60,8 +60,10 @@ source <(kubectl completion bash)
 echo "source <(kubectl completion bash)" >> ~/.bashrc
 alias k=kubectl
 complete -F __start_kubectl k
+```
 
-# K9s installation (Purely Optional)
+K9s installation (Purely Optional)
+```bash
 # for Mac -
 brew install derailed/k9s/k9s
 
