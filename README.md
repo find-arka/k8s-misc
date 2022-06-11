@@ -32,4 +32,4 @@ choco install k9s
 
 ### Navigation links
 
-- [Gloo Edge on Azure Kubernetes Services](https://github.com/find-arka/k8s-misc/blob/v0.0.3/API-Gateway/README.md)
+- [Gloo Edge on Azure Kubernetes Services](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/README.md)
