@@ -129,5 +129,5 @@ glooctl get upstreams
 
 # Next Steps
 
-1. [Setup observability components](https://github.com/find-arka/k8s-misc/blob/v0.0.3/API-Gateway/setup-observability.md)
-2. [Setup sample application and explore API Gateway features](https://github.com/find-arka/k8s-misc/blob/v0.0.3/API-Gateway/test-with-sample-application.md)
+1. [Setup observability components](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/setup-observability.md)
+2. [Setup sample application and explore API Gateway features](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/test-with-sample-application.md)

@@ -21,5 +21,5 @@ kubectl edit service prometheus-server
 
 ## Navigation links
 
-- [previous](https://github.com/find-arka/k8s-misc/blob/v0.0.3/API-Gateway/README.md)
-- [next](https://github.com/find-arka/k8s-misc/blob/v0.0.3/API-Gateway/test-with-sample-application.md)
+- [previous](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/README.md)
+- [next](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/test-with-sample-application.md)

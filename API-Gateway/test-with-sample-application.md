@@ -129,7 +129,7 @@ curl $(glooctl proxy url)/api/httpbin/delay/4 -i
 
 ### Validate - view metrics in Prometheus
 
-> Pre-req: [Run Prometheus in the K8s cluster](https://github.com/find-arka/k8s-misc/blob/v0.0.3/API-Gateway/setup-observability.md)
+> Pre-req: [Run Prometheus in the K8s cluster](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/setup-observability.md)
 
 - View on localhost after port-forwarding.
 ```bash
@@ -162,7 +162,7 @@ curl $(glooctl proxy url)/api/httpbin/delay/7 -i
 within a minute, the 504 count should increase.
 
 ## Navigation links
-- [previous](https://github.com/find-arka/k8s-misc/blob/v0.0.3/API-Gateway/setup-observability.md)
+- [previous](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/setup-observability.md)
 
 ### Cleanup
 
