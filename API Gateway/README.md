@@ -1,6 +1,6 @@
 ## API Gateway on an Azure Kubernetes cluster (AKS)
 
-#### Step 1: AKS Cluster creation
+### Step 1: AKS Cluster creation
 
 Create an AKS cluster using Azure CLI from [Azure cloud shell](https://shell.azure.com).
 
@@ -57,31 +57,31 @@ aks-infra-28829824-vmss000000   Ready    agent   30m   v1.22.6   infra       sou
 aks-infra-28829824-vmss000001   Ready    agent   30m   v1.22.6   infra       southcentralus-2
 ```
 
-#### Step 2: Install gloo edge using helm
+### Step 2: Install gloo edge using helm
 
-Add helm chart repository and create a K8s namespace `my-namespace` to install `gloo`.
+- Add helm chart repository and create a K8s namespace `gloo-system` to install `gloo`.
 ```bash
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
 helm repo update
-kubectl create namespace my-namespace
+kubectl create namespace gloo-system
 ```
 
-Install gloo with helm
+- Install gloo with helm
 ```bash
-helm install gloo gloo/gloo --namespace my-namespace
+helm install gloo gloo/gloo --namespace gloo-system
 ```
 
 #### Step 2: Success Criteria
 
 - Verify that status is showing as `deployed`
 ```
-helm -n my-namespace status gloo | grep STATUS
+helm -n gloo-system status gloo | grep STATUS
 ```
 Expected output: `STATUS: deployed`
 
 - Check all resources created in your K8s namespace
 ```bash
-kubectl -n my-namespace get all
+kubectl -n gloo-system get all
 ```
 Output:
 ```bash
@@ -107,4 +107,12 @@ replicaset.apps/discovery-65b7df6f47       1         1         1       35s
 replicaset.apps/gateway-5685f9774f         1         1         1       35s
 replicaset.apps/gateway-proxy-59c76d5558   1         1         1       35s
 replicaset.apps/gloo-c69bb79c6             1         1         1       35s
+```
+# Cleanup after usage
+
+- Delete the cluster
+```bash
+az aks delete \
+    --resource-group $RG \
+    --name $MY_CLUSTER_NAME
 ```
