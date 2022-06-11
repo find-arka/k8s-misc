@@ -2,6 +2,8 @@
 
 #### Step 1: AKS Cluster creation
 
+Create an AKS cluster using Azure CLI https://shell.azure.com
+
 - Setup variables for ease and readability of the future commands
 ```bash 
 LOCATION=$(az group list | jq -r '.[].location')
