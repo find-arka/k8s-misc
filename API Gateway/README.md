@@ -1,4 +1,4 @@
-## API Gateway on a K8s cluster
+## API Gateway on an Azure Kubernetes cluster (AKS)
 
 #### Step 1: AKS Cluster creation
 
