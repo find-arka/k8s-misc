@@ -1,6 +1,6 @@
 # Gloo Edge - Azure Kubernetes Services (AKS)
 
-### Step 1: AKS Cluster creation
+## Step 1: AKS Cluster creation
 
 Create an AKS cluster using Azure CLI from [Azure cloud shell](https://shell.azure.com).
 
@@ -57,7 +57,7 @@ aks-infra-28829824-vmss000000   Ready    agent   30m   v1.22.6   infra       sou
 aks-infra-28829824-vmss000001   Ready    agent   30m   v1.22.6   infra       southcentralus-2
 ```
 
-### Step 2: Install Gloo Edge using helm
+## Step 2: Install Gloo Edge using helm
 
 - Add helm chart repository and create a K8s namespace `gloo-system` to install `gloo`.
 ```bash
