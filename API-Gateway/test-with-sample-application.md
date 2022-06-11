@@ -7,7 +7,6 @@ Image: `docker.io/kennethreitz/httpbin` - [github repo](https://github.com/postm
 ```
 kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-blog/main/zero-to-gateway/httpbin-svc-dpl.yaml
 ```
-# //TODO Deploy in a diff namespace & test?
 
 ## Setup Routing
 
