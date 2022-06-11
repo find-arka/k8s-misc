@@ -15,7 +15,10 @@ kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-blog/main/zero-t
 
 ## Configure Routing
 
-`matchers:` stanza: Match the path prefix `/api/httpbin` and replace it with `/`. So a path like `/api/httpbin/delay/1` will be sent to `httpbin` upstream with the path `/delay/1`.
+Match the path prefix `/api/httpbin` and replace it with `/`
+
+`/api/httpbin/delay/1` => `httpbin` upstream with the path `/delay/1`
+`/api/httpbin/get`     => `httpbin` upstream with the path `/get`
 
 ```bash
 kubectl -n gloo-system apply -f - <<EOF
