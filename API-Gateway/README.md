@@ -109,7 +109,7 @@ replicaset.apps/gateway-proxy-59c76d5558   1         1         1       35s
 replicaset.apps/gloo-c69bb79c6             1         1         1       35s
 ```
 
-#### glooctl
+#### glooctl (optional CLI tool which assists in operations)
 
 - Installation:
 ```bash
@@ -121,6 +121,12 @@ export PATH=$HOME/.gloo/bin:$PATH
 ```bash
 glooctl check
 ```
+
+- Check upstreams:
+```bash
+glooctl get upstreams
+```
+
 # Cleanup after usage
 
 - Delete the cluster
