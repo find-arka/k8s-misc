@@ -122,6 +122,44 @@ curl $(glooctl proxy url)/api/httpbin/delay/7 -i
 curl $(glooctl proxy url)/api/httpbin/delay/4 -i
 ```
 
+## Metrics
+
+- envoy by default exposes metrics on `/stats` endpoint.
+- gateway-proxy runs envoy wrapper named `gloo-envoy-wrapper`, and exposes envoy metrics on port `8081`.
+
+### Validate - view metrics in Prometheus
+
+> Pre-req: [Run Prometheus in the K8s cluster](https://github.com/find-arka/k8s-misc/blob/v0.0.2/API-Gateway/setup-observability.md)
+
+- View on localhost after port-forwarding.
+```bash
+kubectl port-forward service/prometheus-server 9090:80
+```
+Go to http://localhost:9090
+
+_OR,_
+
+- If `prometheus-server` Service is running as `LoadBalancer`, go to the External IP of the `LoadBalancer`
+```bash
+kubectl -n telemetry get svc prometheus-server -o json | jq -r .status.loadBalancer.ingress[0].ip
+```
+
+#### Check Success response count(200) and Gateway Timeout(504) response count 
+
+```
+envoy_cluster_upstream_rq{envoy_response_code="200",envoy_cluster_name=~".*httpbin.*"}
+```
+
+```
+envoy_cluster_upstream_rq{envoy_response_code="504",envoy_cluster_name=~".*httpbin.*"}
+```
+
+Forcefully timeout a couple of times-
+```bash
+# 504 response expected
+curl $(glooctl proxy url)/api/httpbin/delay/7 -i
+```
+within a minute, the 504 count should increase.
+
 ## Navigation links
-- [previous](https://github.com/find-arka/k8s-misc/blob/v0.0.2/API-Gateway/README.md)
-- [next](https://github.com/find-arka/k8s-misc/blob/v0.0.2/API-Gateway/setup-observability.md)
+- [previous](https://github.com/find-arka/k8s-misc/blob/v0.0.2/API-Gateway/setup-observability.md)
