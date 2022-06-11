@@ -2,7 +2,8 @@
 
 #### Step 1: AKS Cluster creation
 
-Create an AKS cluster using Azure CLI from [Azure cloud shell](https://shell.azure.com)
+Create an AKS cluster using Azure CLI from [Azure cloud shell](https://shell.azure.com).
+> If you are seeing the message `You have no storage mounted`, [this guide](https://docs.microsoft.com/en-us/azure/cloud-shell/persisting-shell-storage) might be helpful to setup storage.
 
 - Setup variables for ease and readability of the future commands
 ```bash 
