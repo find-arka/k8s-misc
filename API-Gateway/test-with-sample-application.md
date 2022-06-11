@@ -163,3 +163,12 @@ within a minute, the 504 count should increase.
 
 ## Navigation links
 - [previous](https://github.com/find-arka/k8s-misc/blob/v0.0.3/API-Gateway/setup-observability.md)
+
+### Cleanup
+
+Delete the cluster.
+```bash
+az aks delete \
+    --resource-group $RG \
+    --name $MY_CLUSTER_NAME
+```
