@@ -1,4 +1,4 @@
-## API Gateway on an Azure Kubernetes cluster (AKS)
+# Gloo Edge - Azure Kubernetes Services (AKS)
 
 ### Step 1: AKS Cluster creation
 
@@ -107,6 +107,19 @@ replicaset.apps/discovery-65b7df6f47       1         1         1       35s
 replicaset.apps/gateway-5685f9774f         1         1         1       35s
 replicaset.apps/gateway-proxy-59c76d5558   1         1         1       35s
 replicaset.apps/gloo-c69bb79c6             1         1         1       35s
+```
+
+#### glooctl
+
+- Installation:
+```bash
+curl -sL https://run.solo.io/gloo/install | sh
+export PATH=$HOME/.gloo/bin:$PATH
+```
+
+- Debugging usage:
+```bash
+glooctl check
 ```
 # Cleanup after usage
 

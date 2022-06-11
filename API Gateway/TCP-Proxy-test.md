@@ -1,4 +1,4 @@
-> Notes from my test environment based on [TCP Proxy](https://docs.solo.io/gloo-edge/master/guides/traffic_management/listener_configuration/tcp_proxy/)
+> Notes from my test environment based on [TCP Proxy doc](https://docs.solo.io/gloo-edge/master/guides/traffic_management/listener_configuration/tcp_proxy/)
 
 ## Traffic Management with gloo - TCP Proxy test
 
