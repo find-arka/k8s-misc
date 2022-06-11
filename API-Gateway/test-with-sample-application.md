@@ -49,11 +49,12 @@ Get the IP-
 ```
 kubectl -n gloo-system get svc gateway-proxy -o json | jq -r .status.loadBalancer.ingress[0].ip
 ```
-Or, make life easier with `glooctl`
+_Or, make life easier with `glooctl`_
 ```bash
 glooctl proxy url
 ```
-> *[How to install glooctl?](https://github.com/find-arka/k8s-misc/tree/v0.0.1/API-Gateway#glooctl)
+*[How to install glooctl?](https://github.com/find-arka/k8s-misc/tree/v0.0.1/API-Gateway#glooctl)
+
 
 - Test hitting the endpoints
 
