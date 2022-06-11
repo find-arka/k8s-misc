@@ -10,7 +10,7 @@ Create ServiceAccount, Deployment, Service for [httpbin](https://httpbin.org/).
 kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-blog/main/zero-to-gateway/httpbin-svc-dpl.yaml
 ```
 
-## Setup Routing
+## Routing
 
 `matchers:` stanza: Match the path prefix `/api/httpbin` and replace it with `/`. So a path like `/api/httpbin/delay/1` will be sent to `httpbin` upstream with the path `/delay/1`.
 
@@ -41,7 +41,7 @@ spec:
 EOF
 ```
 
-## Validate Routing
+### Validate Routing
 
 - Get the IP and curl `/api/httpbin/delay/1` , `/api/httpbin/get` endpoints via the Gateway.
 
@@ -68,7 +68,7 @@ curl $(glooctl proxy url)/api/httpbin/delay/1 -i
 curl $(glooctl proxy url)/api/httpbin/get -i
 ```
 
-## Add timeout configuration
+## Configure Timeout
 
 Edit `VirtualService` spec, and add 5 seconds timeout (`timeout: '5s'`) under `options` in `routes`
 ```bash
@@ -98,7 +98,8 @@ spec:
             namespace: gloo-system
 EOF
 ```
-### Validate timeout
+
+### Validate Timeout Configuration
 
 Delay time > configured timeout time, results in `504 Gateway Timeout`
 
