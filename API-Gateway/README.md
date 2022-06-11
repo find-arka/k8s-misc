@@ -57,7 +57,7 @@ aks-infra-28829824-vmss000000   Ready    agent   30m   v1.22.6   infra       sou
 aks-infra-28829824-vmss000001   Ready    agent   30m   v1.22.6   infra       southcentralus-2
 ```
 
-### Step 2: Install gloo edge using helm
+### Step 2: Install Gloo Edge using helm
 
 - Add helm chart repository and create a K8s namespace `gloo-system` to install `gloo`.
 ```bash
@@ -127,7 +127,12 @@ glooctl check
 glooctl get upstreams
 ```
 
-# Cleanup after usage
+# Exploration Suggestions
+
+1. [Setup sample application and explore API Gateway features](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/test-with-sample-application.md)
+2. [Setup observability workloads and explore possibilities](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/setup-observability.md)
+
+# Cleanup
 
 - Delete the cluster
 ```bash
