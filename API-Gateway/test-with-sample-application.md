@@ -1,6 +1,9 @@
-# Sample application setup
+# API Gateway feature exploration
 
-> Followed instrictions from [here](https://www.solo.io/blog/from-zero-to-gloo-edge-in-15-minutes-gke/) with some minor edits & some personal notes.
+Run a sample application on the already running K8s cluster, and test various features of the Gloo Edge API Gateway
+> Based on the [solo.io blog](https://www.solo.io/blog/from-zero-to-gloo-edge-in-15-minutes-gke/)  
+
+## Run Sample application
 
 Create ServiceAccount, Deployment, Service for [httpbin](https://httpbin.org/).
 - Image: `docker.io/kennethreitz/httpbin`
@@ -10,7 +13,7 @@ Create ServiceAccount, Deployment, Service for [httpbin](https://httpbin.org/).
 kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-blog/main/zero-to-gateway/httpbin-svc-dpl.yaml
 ```
 
-## Routing
+## Configure Routing
 
 `matchers:` stanza: Match the path prefix `/api/httpbin` and replace it with `/`. So a path like `/api/httpbin/delay/1` will be sent to `httpbin` upstream with the path `/delay/1`.
 
