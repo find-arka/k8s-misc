@@ -2,7 +2,7 @@
 
 > Followed instrictions from [here](https://www.solo.io/blog/from-zero-to-gloo-edge-in-15-minutes-gke/) with some minor edits & some personal notes.
 
-- Create ServiceAccount, Deployment, Service for [httpbin](https://httpbin.org/).
+Create ServiceAccount, Deployment, Service for [httpbin](https://httpbin.org/).
 Image: `docker.io/kennethreitz/httpbin` - [github repo](https://github.com/postmanlabs/httpbin)
 ```
 kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-blog/main/zero-to-gateway/httpbin-svc-dpl.yaml
