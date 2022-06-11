@@ -56,3 +56,55 @@ NAME                            STATUS   ROLES   AGE   VERSION   AGENTPOOL   ZON
 aks-infra-28829824-vmss000000   Ready    agent   30m   v1.22.6   infra       southcentralus-1
 aks-infra-28829824-vmss000001   Ready    agent   30m   v1.22.6   infra       southcentralus-2
 ```
+
+#### Step 2: Install gloo edge using helm
+
+Add helm chart repository and create a K8s namespace `my-namespace` to install `gloo`.
+```bash
+helm repo add gloo https://storage.googleapis.com/solo-public-helm
+helm repo update
+kubectl create namespace my-namespace
+```
+
+Install gloo with helm
+```bash
+helm install gloo gloo/gloo --namespace my-namespace
+```
+
+#### Step 2: Success Criteria
+
+- Verify that status is showing as `deployed`
+```
+helm -n my-namespace status gloo | grep STATUS
+```
+Expected output: `STATUS: deployed`
+
+- Check all resources created in your K8s namespace
+```bash
+kubectl -n my-namespace get all
+```
+Output:
+```bash
+NAME                                 READY   STATUS    RESTARTS   AGE
+pod/discovery-65b7df6f47-764br       1/1     Running   0          34s
+pod/gateway-5685f9774f-79z5m         1/1     Running   0          34s
+pod/gateway-proxy-59c76d5558-z2t75   1/1     Running   0          34s
+pod/gloo-c69bb79c6-dkxbj             1/1     Running   0          34s
+
+NAME                    TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)                               AGE
+service/gateway         ClusterIP      10.0.179.64    <none>          443/TCP                               35s
+service/gateway-proxy   LoadBalancer   10.0.192.102   13.85.198.231   80:30638/TCP,443:31858/TCP            35s
+service/gloo            ClusterIP      10.0.228.148   <none>          9977/TCP,9976/TCP,9988/TCP,9979/TCP   35s
+
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/discovery       1/1     1            1           35s
+deployment.apps/gateway         1/1     1            1           35s
+deployment.apps/gateway-proxy   1/1     1            1           35s
+deployment.apps/gloo            1/1     1            1           35s
+
+NAME                                       DESIRED   CURRENT   READY   AGE
+replicaset.apps/discovery-65b7df6f47       1         1         1       35s
+replicaset.apps/gateway-5685f9774f         1         1         1       35s
+replicaset.apps/gateway-proxy-59c76d5558   1         1         1       35s
+replicaset.apps/gloo-c69bb79c6             1         1         1       35s
+```
