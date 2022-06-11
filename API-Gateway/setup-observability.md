@@ -17,3 +17,6 @@ kubectl port-forward service/prometheus-server 9090:80
 kubectl edit service prometheus-server
 ```
 > Creates a public `LoadBalancer` and exposes an External IP. Integration with External DNS, enabling TLS is important for production usage.
+
+## Navigation links
+- [previous](https://github.com/find-arka/k8s-misc/blob/v0.0.2/API-Gateway/test-with-sample-application.md)

@@ -10,8 +10,9 @@ Create ServiceAccount, Deployment, Service for [httpbin](https://httpbin.org/).
 - [github repo](https://github.com/postmanlabs/httpbin)
 
 ```
-kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-blog/main/zero-to-gateway/httpbin-svc-dpl.yaml
-```
+Navigation links:
+kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-blog/v0.0.2/zero-to-gateway/httpbin-svc-dpl.yaml
+## Navigation links
 
 ## Configure Routing
 
@@ -120,3 +121,7 @@ curl $(glooctl proxy url)/api/httpbin/delay/7 -i
 # 200 response expected
 curl $(glooctl proxy url)/api/httpbin/delay/4 -i
 ```
+
+## Navigation links
+- [previous](https://github.com/find-arka/k8s-misc/blob/v0.0.2/API-Gateway/README.md)
+- [next](https://github.com/find-arka/k8s-misc/blob/v0.0.2/API-Gateway/setup-observability.md)
