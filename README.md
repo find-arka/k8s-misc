@@ -1,9 +1,9 @@
-# k8s-misc
-Notes from miscellaneous K8s learning experiences
+# K8s miscellaneous
+Notes from miscellaneous Kubernetes learning experiences.
 
 > NOTE: This is strictly WIP documentation from my personal experience, if you are following this, creating resources on public cloud, please be mindful of resource utilization and please clean up after testing to avoid unnecessary bills.
 
-#### Setup shortcuts
+#### Useful shortcuts & tools
 
 - [Kubernetes Cheat sheet](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
 ```bash
@@ -15,7 +15,7 @@ alias k=kubectl
 complete -F __start_kubectl k
 ```
 
-- K9s installation (Purely Optional)
+- K9s [installation guide](https://k9scli.io/topics/install/)
 ```bash
 # for Mac -
 brew install derailed/k9s/k9s
@@ -25,6 +25,9 @@ brew install derailed/k9s/k9s
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 brew doctor
 brew install derailed/k9s/k9s
+
+# For Windows
+choco install k9s
 ```
 
 ### Navigation links
