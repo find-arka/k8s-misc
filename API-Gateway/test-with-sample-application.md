@@ -97,6 +97,7 @@ glooctl get upstream default-httpbin-8000
 Match the path prefix `/api/httpbin` and replace it with `/`
 
 `/api/httpbin/delay/1` => `httpbin` upstream with the path `/delay/1`
+
 `/api/httpbin/get`     => `httpbin` upstream with the path `/get`
 
 ```bash
