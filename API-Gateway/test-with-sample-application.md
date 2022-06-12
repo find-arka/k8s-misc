@@ -13,6 +13,84 @@ Create ServiceAccount, Deployment, Service for [httpbin](https://httpbin.org/).
 kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-blog/main/zero-to-gateway/httpbin-svc-dpl.yaml
 ```
 
+Along with ServiceAccount, Service, Deployment an `Upstream` object also gets created implicitly in the namespace where Gloo is deployed. It holds the information related to the `httpbin` K8s `Service`
+```bash
+glooctl get upstream default-httpbin-8000
+```
+
+```bash
+# Expected output
++----------------------+------------+----------+------------------------+
+|       UPSTREAM       |    TYPE    |  STATUS  |        DETAILS         |
++----------------------+------------+----------+------------------------+
+| default-httpbin-8000 | Kubernetes | Accepted | svc name:      httpbin |
+|                      |            |          | svc namespace: default |
+|                      |            |          | port:          8000    |
+|                      |            |          |                        |
++----------------------+------------+----------+------------------------+
+```
+
+## Function Discovery
+
+- Edit the `Upstream` object created-
+```bash
+kubectl -n gloo-system edit upstream default-httpbin-8000
+```
+
+- Add the following config which links with OpenAPI spec file for `httpbin` service.
+```yaml
+    serviceSpec:
+      rest:
+        swaggerInfo:
+          url: https://raw.githubusercontent.com/solo-io/solo-blog/main/zero-to-gateway/httpbin-openapi.json
+```
+
+- Enable function discovery by adding a label `function_discovery=enabled`
+```bash
+kubectl label namespace default discovery.solo.io/function_discovery=enabled
+```
+
+- Get list of functions discovered-
+```bash
+glooctl get upstream default-httpbin-8000
+```
+
+```bash
+# Expected output
++----------------------+------------+----------+------------------------+
+|       UPSTREAM       |    TYPE    |  STATUS  |        DETAILS         |
++----------------------+------------+----------+------------------------+
+| default-httpbin-8000 | Kubernetes | Accepted | svc name:      httpbin |
+|                      |            |          | svc namespace: default |
+|                      |            |          | port:          8000    |
+|                      |            |          | REST service:          |
+|                      |            |          | functions:             |
+|                      |            |          | - /anything            |
+|                      |            |          | - /base64              |
+|                      |            |          | - /brotli              |
+|                      |            |          | - /bytes               |
+|                      |            |          | - /cache               |
+|                      |            |          | - /deflate             |
+|                      |            |          | - /delay               |
+|                      |            |          | - /delete              |
+|                      |            |          | - /get                 |
+|                      |            |          | - /gzip                |
+|                      |            |          | - /headers             |
+|                      |            |          | - /ip                  |
+|                      |            |          | - /patch               |
+|                      |            |          | - /post                |
+|                      |            |          | - /put                 |
+|                      |            |          | - /redirect-to         |
+|                      |            |          | - /response-headers    |
+|                      |            |          | - /status              |
+|                      |            |          | - /stream              |
+|                      |            |          | - /user-agent          |
+|                      |            |          | - /uuid                |
+|                      |            |          | - /xml                 |
+|                      |            |          |                        |
++----------------------+------------+----------+------------------------+
+```
+
 ## Configure Routing
 
 Match the path prefix `/api/httpbin` and replace it with `/`
