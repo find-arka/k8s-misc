@@ -140,7 +140,7 @@ _OR, make life easier with `glooctl`_
 ```bash
 glooctl proxy url
 ```
-> _[How to install `glooctl`?]_(https://github.com/find-arka/k8s-misc/tree/v0.0.1/API-Gateway#glooctl)
+> _[How to install `glooctl`?](https://github.com/find-arka/k8s-misc/tree/v0.0.1/API-Gateway#glooctl)_
 
 
 - Test hitting the endpoints
