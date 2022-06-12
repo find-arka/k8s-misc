@@ -128,17 +128,19 @@ EOF
 
 ### Validate Routing
 
-- Get the IP and curl `/api/httpbin/delay/1` , `/api/httpbin/get` endpoints via the Gateway.
+- Get the IP of `gateway-proxy` Service and curl `/api/httpbin/delay/1` , `/api/httpbin/get` endpoints.
 
-Get the IP-
+Get the IP using standard `kubectl` command-
 ```
 kubectl -n gloo-system get svc gateway-proxy -o json | jq -r .status.loadBalancer.ingress[0].ip
 ```
-_Or, make life easier with `glooctl`_
+
+_OR, make life easier with `glooctl`_
+
 ```bash
 glooctl proxy url
 ```
-*[How to install glooctl?](https://github.com/find-arka/k8s-misc/tree/v0.0.1/API-Gateway#glooctl)
+> _[How to install `glooctl`?]_(https://github.com/find-arka/k8s-misc/tree/v0.0.1/API-Gateway#glooctl)
 
 
 - Test hitting the endpoints
