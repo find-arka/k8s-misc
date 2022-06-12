@@ -4,7 +4,7 @@
 
 Create an AKS cluster using Azure CLI from [Azure cloud shell](https://shell.azure.com).
 
-> If you see the message `You have no storage mounted` in [Azure cloud shell](https://shell.azure.com), [this guide](https://docs.microsoft.com/en-us/azure/cloud-shell/persisting-shell-storage) should be helpful.
+> If you see the message `You have no storage mounted` in Azure cloud shell, [this guide](https://docs.microsoft.com/en-us/azure/cloud-shell/persisting-shell-storage) should be helpful.
 
 - Setup variables for ease and readability of the future commands
 ```bash 
