@@ -162,7 +162,7 @@ curl $(glooctl proxy url)/api/httpbin/delay/7 -i
 within a minute, the 504 count should increase.
 
 ## Navigation links
-- [previous](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/setup-observability.md)
+- Previous: [Install Prometheus](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/setup-observability.md)
 
 ### Cleanup
 

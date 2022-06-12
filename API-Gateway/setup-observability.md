@@ -21,5 +21,5 @@ kubectl edit service prometheus-server
 
 ## Navigation links
 
-- [previous](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/README.md)
-- [next](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/test-with-sample-application.md)
+- Next: [API Gateway feature exploration](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/test-with-sample-application.md)
+- Previous: [Setup AKS Cluster and install Gloo Edge](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/README.md)
