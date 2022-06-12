@@ -13,8 +13,6 @@ Create ServiceAccount, Deployment, Service for [httpbin](https://httpbin.org/).
 kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-blog/v0.0.2/zero-to-gateway/httpbin-svc-dpl.yaml
 ```
 
-## Navigation links
-
 ## Configure Routing
 
 Match the path prefix `/api/httpbin` and replace it with `/`
