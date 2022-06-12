@@ -15,7 +15,7 @@ kubectl -n telemetry port-forward service/prometheus-server 9090:80
 _OR,_
 - View Prometheus Server on Public IP by changing the type of the `Service` temporarily from `ClusterIP` to `LoadBalancer`
 ```bash
-kubectl edit service prometheus-server
+kubectl -n telemetry edit service prometheus-server
 ```
 > Creates a public `LoadBalancer` and exposes an External IP.
 
