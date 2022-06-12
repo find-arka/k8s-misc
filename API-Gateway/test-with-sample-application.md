@@ -242,6 +242,8 @@ curl $(glooctl proxy url)/api/httpbin/delay/7 -i
 ```
 within a minute, the 504 count should increase.
 
+![](./images/screenshot-prometheus.JPG)
+
 ## Debugging using glooctl
 
 - Edit `VirtualService` and edit the upstream value. e.g. Add the word `-random` to the upstream name.
