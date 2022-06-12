@@ -10,7 +10,7 @@ Create ServiceAccount, Deployment, Service for [httpbin](https://httpbin.org/).
 - [github repo](https://github.com/postmanlabs/httpbin)
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-blog/v0.0.2/zero-to-gateway/httpbin-svc-dpl.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-blog/main/zero-to-gateway/httpbin-svc-dpl.yaml
 ```
 
 ## Configure Routing
