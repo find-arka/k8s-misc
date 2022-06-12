@@ -206,9 +206,9 @@ curl $(glooctl proxy url)/api/httpbin/delay/4 -i
 ## Metrics
 
 - envoy by default exposes metrics on `/stats` endpoint.
-- gateway-proxy runs envoy wrapper named `gloo-envoy-wrapper`, and exposes envoy metrics on port `8081`.
+- `gateway-proxy` runs envoy wrapper named `gloo-envoy-wrapper`, and exposes envoy metrics on port `8081`.
 
-### Validate - view metrics in Prometheus
+### Validate metrics in Prometheus
 
 > Pre-req: [Run Prometheus in the K8s cluster](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/setup-observability.md)
 
@@ -241,6 +241,45 @@ Forcefully timeout a couple of times-
 curl $(glooctl proxy url)/api/httpbin/delay/7 -i
 ```
 within a minute, the 504 count should increase.
+
+## Debugging using glooctl
+
+- Edit `VirtualService` and edit the upstream value. e.g. Add the word `-random` to the upstream name.
+```bash
+kubectl -n gloo-system edit VirtualService default
+```
+
+- Hit the `/get` endpoint on the gateway
+```
+# should return HTTP/1.1 503 Service Unavailable 
+curl $(glooctl proxy url)/api/httpbin/get -i
+```
+
+- Debug using `glooctl`
+```
+glooctl check
+```
+
+- Expected output from `glooctl` would indicate the possible misconfiguration.
+```bash
+Error: 3 errors occurred:
+        * Found virtual service with warnings by 'gloo-system': gloo-system default (Reason: warning: 
+  Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { gloo-system.default-httpbin-8000-random } not found)
+        * Virtual service references unknown upstream: (Virtual service: gloo-system default | Upstream: gloo-system default-httpbin-8000-random)
+        * Found proxy with warnings by 'gloo-system': gloo-system gateway-proxy
+Reason: warning: 
+  Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { gloo-system.default-httpbin-8000-random } not found
+```
+
+- Reset the upstream info back to the correct value
+```bash
+kubectl -n gloo-system edit VirtualService default
+```
+
+- Verify that curl works again
+```bash
+curl $(glooctl proxy url)/api/httpbin/get -i
+```
 
 ## Navigation links
 - Previous: [Install Prometheus](https://github.com/find-arka/k8s-misc/blob/main/API-Gateway/setup-observability.md)
