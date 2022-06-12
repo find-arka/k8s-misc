@@ -30,14 +30,7 @@ az aks create \
 
 - Get access credentials for the managed Kubernetes cluster
 ```bash
-az aks get-credentials --resource-group $RG --name $MY_CLUSTER_NAME 
-```
-
-- If the above `az aks get-credentials` fails, you would have to manually invoke these commands and re-run the get-credentials command
-```bash
-SUB_ID=$(az account subscription list | jq -r .[].subscriptionId)
-az account set --subscription $SUB_ID
-az aks get-credentials --resource-group $RG --name $MY_CLUSTER_NAME --overwrite-existing
+az aks get-credentials --resource-group $RG --name $MY_CLUSTER_NAME
 ```
 
 #### Step 1: Success Criteria
