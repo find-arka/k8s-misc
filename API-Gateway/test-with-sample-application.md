@@ -13,7 +13,8 @@ Create ServiceAccount, Deployment, Service for [httpbin](https://httpbin.org/).
 kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-blog/main/zero-to-gateway/httpbin-svc-dpl.yaml
 ```
 
-Along with ServiceAccount, Service, Deployment an `Upstream` object also gets created implicitly in the namespace where Gloo is deployed. It holds the information related to the `httpbin` K8s `Service`
+An `Upstream` object also gets created implicitly in the namespace where Gloo is deployed.
+- Get upstream info using `glooctl` CLI
 ```bash
 glooctl get upstream default-httpbin-8000
 ```

@@ -1,1 +1,1 @@
-> Contains backup files in case https://raw.githubusercontent.com/solo-io/solo-blog/main/zero-to-gateway/* files become unavailable due to some reason.
+> Contains backup in case https://github.com/solo-io/solo-blog/tree/main/zero-to-gateway files become unavailable for testing.
