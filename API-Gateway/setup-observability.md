@@ -8,9 +8,9 @@ helm repo update
 helm -n telemetry install prometheus prometheus-community/prometheus
 ```
 
-- View Prometheus Server on localhost.
+- Port Forward and view Prometheus Server on [localhost](http://localhost:9090).
 ```bash
-kubectl port-forward service/prometheus-server 9090:80
+kubectl -n telemetry port-forward service/prometheus-server 9090:80
 ```
 _OR,_
 - View Prometheus Server on Public IP by changing the type of the `Service` temporarily from `ClusterIP` to `LoadBalancer`
