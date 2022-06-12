@@ -92,7 +92,7 @@ glooctl get upstream default-httpbin-8000
 +----------------------+------------+----------+------------------------+
 ```
 
-## Configure Routing
+## Configure Routing with the help of VirtualService object
 
 Match the path prefix `/api/httpbin` and replace it with `/`
 
@@ -156,9 +156,9 @@ curl $(glooctl proxy url)/api/httpbin/delay/1 -i
 curl $(glooctl proxy url)/api/httpbin/get -i
 ```
 
-## Configure Timeout
+## Configure Timeout with the help of VirtualService object
 
-Edit `VirtualService` spec, and add 5 seconds timeout (`timeout: '5s'`) under `options` in `routes`
+Edit the `VirtualService` spec, and add 5 seconds timeout (`timeout: '5s'`) under `options` in `routes`
 ```bash
 kubectl -n gloo-system apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
