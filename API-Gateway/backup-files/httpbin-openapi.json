@@ -229,13 +229,6 @@
                 }],
                 "responses": {}
             }
-        },
-        "/random-bs": {
-            "get": {
-                "description": "Ideally should return nothing.",
-                "operationId": "/random-bs",
-                "responses": {}
-            }
         }
     }
 }
