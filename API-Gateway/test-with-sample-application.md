@@ -242,6 +242,7 @@ curl $(glooctl proxy url)/api/httpbin/delay/7 -i
 ```
 within a minute, the 504 count should increase.
 
+- Screenshot of captured metrics after repeatedly hitting the `/get` endpoint- 
 ![](./images/screenshot-prometheus.JPG)
 
 ## Debugging using glooctl
