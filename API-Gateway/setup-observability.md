@@ -1,5 +1,7 @@
 # Install Prometheus
 
+> Documentation of Prometheus helm chart customization options is present [here](https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus/values.yaml)
+
 - Install Prometheus via helm chart in `telemetry` namespace.
 ```bash
 kubectl create namespace telemetry

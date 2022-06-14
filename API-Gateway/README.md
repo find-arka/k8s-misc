@@ -52,6 +52,8 @@ aks-infra-28829824-vmss000001   Ready    agent   30m   v1.22.6   infra       sou
 
 ## Step 2: Install Gloo Edge using helm
 
+> Documentation of Gloo Edge helm chart customization options is present [here](https://docs.solo.io/gloo-edge/latest/reference/helm_chart_values/open_source_helm_chart_values/)
+
 - Add helm chart repository and create a K8s namespace `gloo-system` to install `gloo`.
 ```bash
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
