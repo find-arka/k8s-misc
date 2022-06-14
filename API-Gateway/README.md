@@ -7,11 +7,24 @@ Create an AKS cluster using Azure CLI from [Azure cloud shell](https://shell.azu
 > If you see the message `You have no storage mounted` in Azure cloud shell, [this guide](https://docs.microsoft.com/en-us/azure/cloud-shell/persisting-shell-storage) should be helpful.
 
 - Setup variables for ease and readability of the future commands
-```bash 
+
+If you already have a test Resource Group created in Azure-
+```bash
 LOCATION=$(az group list | jq -r '.[].location')
 RG=$(az group list | jq -r '.[].name')
-MY_CLUSTER_NAME=myAKSCluster
+MY_CLUSTER_NAME="myAKSCluster"
 
+# Intent 
+echo "Planning to create a new multinode AKS cluster with name '$MY_CLUSTER_NAME' in Resource Group '$RG' at '$LOCATION'."
+```
+
+If you need to create a new Resource Group in a dedicated region e.g. southcentralus- 
+```bash
+LOCATION="southcentralus"
+RG="my-aks-cluster-rg"
+MY_CLUSTER_NAME="myAKSCluster"
+az group create --location $LOCATION \
+                --name $RG;
 # Intent 
 echo "Planning to create a new multinode AKS cluster with name '$MY_CLUSTER_NAME' in Resource Group '$RG' at '$LOCATION'."
 ```
