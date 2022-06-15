@@ -53,7 +53,7 @@ az aks nodepool add \
 
 - Get access credentials for the managed Kubernetes cluster
 ```bash
-az aks get-credentials --resource-group $RG --name $MY_CLUSTER_NAME
+az aks get-credentials --resource-group $RG --name $MY_CLUSTER_NAME --overwrite-existing
 ```
 
 #### Step 1: Success Criteria
