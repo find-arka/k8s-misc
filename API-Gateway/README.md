@@ -58,8 +58,8 @@ az aks get-credentials --resource-group $RG --name $MY_CLUSTER_NAME --overwrite-
 
 #### Step 1: Success Criteria
 
-- Multinode cluster, each nod in different Availability zone should be created.
-- The nodes should have labels to imply that they are part of `infra` nodepool.
+- Multinode cluster, each node in different Availability Zone should be created.
+- The nodes should have labels to imply that they are part of which nodepool.
 
 Verification:
 ```bash
