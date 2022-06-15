@@ -47,8 +47,7 @@ az aks nodepool add \
   --cluster-name $MY_CLUSTER_NAME \
   --nodepool-name app \
   --tags node-type=app \
-  --node-count 1 \
-  --zones 3
+  --node-count 1
 ```
 
 - Get access credentials for the managed Kubernetes cluster
@@ -68,10 +67,10 @@ kubectl get nodes -L agentpool,topology.kubernetes.io/zone
 
 Sample Output:
 ```bash
-NAME                            STATUS   ROLES   AGE     VERSION   AGENTPOOL   ZONE
-aks-app-28829824-vmss000000     Ready    agent   9m23s   v1.22.6   app         southcentralus-3
-aks-infra-33378480-vmss000000   Ready    agent   30m     v1.22.6   infra       southcentralus-1
-aks-infra-33378480-vmss000001   Ready    agent   30m     v1.22.6   infra       southcentralus-2
+NAME                            STATUS   ROLES   AGE   VERSION   AGENTPOOL   ZONE
+aks-app-13271860-vmss000000     Ready    agent   12s   v1.22.6   app         
+aks-infra-11482989-vmss000000   Ready    agent   14m   v1.22.6   infra       centralus-1
+aks-infra-11482989-vmss000001   Ready    agent   14m   v1.22.6   infra       centralus-2
 ```
 
 ## Step 2: Install Gloo Edge using helm
