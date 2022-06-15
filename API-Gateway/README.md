@@ -41,13 +41,14 @@ az aks create \
 ```
 
 - Add a different nodepool with tag `app` for applications which are not infrastructure related. This nodepool could be configured to be elastic in nature and end users could deploy their applications in this nodepool. For simplicity, I have kept the node count to 1 for now.
-```
+```bash
 az aks nodepool add \
   --resource-group $RG \
   --cluster-name $MY_CLUSTER_NAME \
   --nodepool-name app \
   --tags node-type=app \
-  --node-count 1
+  --node-count 1 \
+  --zones 3
 ```
 
 - Get access credentials for the managed Kubernetes cluster
@@ -68,7 +69,7 @@ kubectl get nodes -L agentpool,topology.kubernetes.io/zone
 Sample Output:
 ```bash
 NAME                            STATUS   ROLES   AGE   VERSION   AGENTPOOL   ZONE
-aks-app-13271860-vmss000000     Ready    agent   12s   v1.22.6   app         
+aks-app-13271860-vmss000000     Ready    agent   12s   v1.22.6   app         centralus-3         
 aks-infra-11482989-vmss000000   Ready    agent   14m   v1.22.6   infra       centralus-1
 aks-infra-11482989-vmss000001   Ready    agent   14m   v1.22.6   infra       centralus-2
 ```
