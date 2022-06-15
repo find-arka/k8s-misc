@@ -125,9 +125,9 @@ kubectl -n gloo-system get pods -l gloo=gateway-proxy -o wide
 
 Inspect the `NODE` column in the output-
 ```bash
-NAME                             READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
-gateway-proxy-6857ff4f68-rbnck   1/1     Running   0          5m56s   10.244.0.10   aks-infra-33378480-vmss000000   <none>           <none>
-gateway-proxy-6857ff4f68-s7bj7   1/1     Running   0          5m56s   10.244.1.10   aks-infra-33378480-vmss000001   <none>           <none>
+NAME                             READY   STATUS    RESTARTS   AGE   IP           NODE                            NOMINATED NODE   READINESS GATES
+gateway-proxy-6857ff4f68-fm8cj   1/1     Running   0          20s   10.244.0.7   aks-infra-11482989-vmss000001   <none>           <none>
+gateway-proxy-6857ff4f68-gjwkw   1/1     Running   0          20s   10.244.1.4   aks-infra-11482989-vmss000000   <none>           <none>
 ```
 
 - Check all resources created in your K8s namespace
@@ -137,28 +137,28 @@ kubectl -n gloo-system get all
 Output:
 ```bash
 NAME                                 READY   STATUS    RESTARTS   AGE
-pod/discovery-65b7df6f47-w68jc       1/1     Running   0          4m38s
-pod/gateway-5685f9774f-6hhwg         1/1     Running   0          4m38s
-pod/gateway-proxy-6857ff4f68-rbnck   1/1     Running   0          4m38s
-pod/gateway-proxy-6857ff4f68-s7bj7   1/1     Running   0          4m38s
-pod/gloo-c69bb79c6-m2khh             1/1     Running   0          4m38s
+pod/discovery-65b7df6f47-frh2g       1/1     Running   0          81s
+pod/gateway-5685f9774f-vqzsj         1/1     Running   0          81s
+pod/gateway-proxy-6857ff4f68-fm8cj   1/1     Running   0          81s
+pod/gateway-proxy-6857ff4f68-gjwkw   1/1     Running   0          81s
+pod/gloo-c69bb79c6-tbx78             1/1     Running   0          81s
 
 NAME                    TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)                               AGE
-service/gateway         ClusterIP      10.0.153.111   <none>          443/TCP                               4m38s
-service/gateway-proxy   LoadBalancer   10.0.18.15     20.84.225.139   80:32584/TCP,443:30740/TCP            4m38s
-service/gloo            ClusterIP      10.0.248.81    <none>          9977/TCP,9976/TCP,9988/TCP,9979/TCP   4m38s
+service/gateway         ClusterIP      10.0.184.103   <none>          443/TCP                               81s
+service/gateway-proxy   LoadBalancer   10.0.154.173   20.221.122.68   80:31307/TCP,443:30498/TCP            81s
+service/gloo            ClusterIP      10.0.129.197   <none>          9977/TCP,9976/TCP,9988/TCP,9979/TCP   81s
 
 NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/discovery       1/1     1            1           4m39s
-deployment.apps/gateway         1/1     1            1           4m39s
-deployment.apps/gateway-proxy   2/2     2            2           4m39s
-deployment.apps/gloo            1/1     1            1           4m39s
+deployment.apps/discovery       1/1     1            1           81s
+deployment.apps/gateway         1/1     1            1           81s
+deployment.apps/gateway-proxy   2/2     2            2           81s
+deployment.apps/gloo            1/1     1            1           81s
 
 NAME                                       DESIRED   CURRENT   READY   AGE
-replicaset.apps/discovery-65b7df6f47       1         1         1       4m39s
-replicaset.apps/gateway-5685f9774f         1         1         1       4m39s
-replicaset.apps/gateway-proxy-6857ff4f68   2         2         2       4m39s
-replicaset.apps/gloo-c69bb79c6             1         1         1       4m39s
+replicaset.apps/discovery-65b7df6f47       1         1         1       81s
+replicaset.apps/gateway-5685f9774f         1         1         1       81s
+replicaset.apps/gateway-proxy-6857ff4f68   2         2         2       81s
+replicaset.apps/gloo-c69bb79c6             1         1         1       81s
 ```
 
 #### glooctl (optional CLI tool which assists in operations)
