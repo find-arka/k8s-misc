@@ -16,17 +16,21 @@ complete -F __start_kubectl k
 ```
 
 - K9s [installation guide](https://k9scli.io/topics/install/)
+
+Mac
 ```bash
-# for Mac -
 brew install derailed/k9s/k9s
+```
 
-# For Ubuntu, other Linux distros - 
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-brew doctor
+Ubuntu/other Linux distributions
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && \
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && \
 brew install derailed/k9s/k9s
+```
 
-# For Windows
+Windows (using `chocolatey`)
+```
 choco install k9s
 ```
 
