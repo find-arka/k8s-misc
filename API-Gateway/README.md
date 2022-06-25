@@ -28,8 +28,7 @@ az group create --location $LOCATION \
 # Intent 
 echo "Planning to create a new multinode AKS cluster with name '$MY_CLUSTER_NAME' in Resource Group '$RG' at '$LOCATION'."
 ```
-
-- Create a multinode K8s cluster spread out in different AZs.
+- Create a multinode K8s cluster spread out in different AZs with nodepool name: `infra`. This nodepool is meant for core infrastructure component deployment.
 ```bash
 az aks create \
     --resource-group $RG \
@@ -41,15 +40,26 @@ az aks create \
     --nodepool-tags node-type=infra
 ```
 
+- Add a different nodepool with tag `app` for applications which are not infrastructure related. This nodepool could be configured to be elastic in nature and end users could deploy their applications in this nodepool. For simplicity, I have kept the node count to 1 for now.
+```bash
+az aks nodepool add \
+  --resource-group $RG \
+  --cluster-name $MY_CLUSTER_NAME \
+  --nodepool-name app \
+  --tags node-type=app \
+  --node-count 1 \
+  --zones 3
+```
+
 - Get access credentials for the managed Kubernetes cluster
 ```bash
-az aks get-credentials --resource-group $RG --name $MY_CLUSTER_NAME
+az aks get-credentials --resource-group $RG --name $MY_CLUSTER_NAME --overwrite-existing
 ```
 
 #### Step 1: Success Criteria
 
-- Multinode cluster, each nod in different Availability zone should be created.
-- The nodes should have labels to imply that they are part of `infra` nodepool.
+- Multinode cluster, each node in different Availability Zone should be created.
+- The nodes should have labels to imply that they are part of which nodepool.
 
 Verification:
 ```bash
@@ -59,8 +69,9 @@ kubectl get nodes -L agentpool,topology.kubernetes.io/zone
 Sample Output:
 ```bash
 NAME                            STATUS   ROLES   AGE   VERSION   AGENTPOOL   ZONE
-aks-infra-28829824-vmss000000   Ready    agent   30m   v1.22.6   infra       southcentralus-1
-aks-infra-28829824-vmss000001   Ready    agent   30m   v1.22.6   infra       southcentralus-2
+aks-app-13271860-vmss000000     Ready    agent   12s   v1.22.6   app         centralus-3         
+aks-infra-11482989-vmss000000   Ready    agent   14m   v1.22.6   infra       centralus-1
+aks-infra-11482989-vmss000001   Ready    agent   14m   v1.22.6   infra       centralus-2
 ```
 
 ## Step 2: Install Gloo Edge using helm
@@ -74,9 +85,30 @@ helm repo update
 kubectl create namespace gloo-system
 ```
 
-- Install gloo with helm
+- Create an override file with `antiAffinity`, `nodeSelector` and upgraded `replicaCount` for Gateway Proxy component.
+> Similar config could be introduced to the other Gloo components via the helm chart configuration options present [here](https://docs.solo.io/gloo-edge/latest/reference/helm_chart_values/open_source_helm_chart_values/)
+```yaml
+cat > gloo-value-overrides.yaml - <<EOF
+gatewayProxies:
+  gatewayProxy:
+    kind:
+      deployment:
+        replicas: 2
+    antiAffinity: true
+    podTemplate:
+      nodeSelector:
+        agentpool: 'infra'
+EOF
+```
+
+- Verify that the override config generates the desired template
 ```bash
-helm install gloo gloo/gloo --namespace gloo-system
+helm template -f gloo-value-overrides.yaml --namespace gloo-system gloo gloo/gloo
+```
+
+- install with the overrides
+```bash
+helm install -f gloo-value-overrides.yaml --namespace gloo-system gloo gloo/gloo
 ```
 
 #### Step 2: Success Criteria
@@ -87,6 +119,18 @@ helm -n gloo-system status gloo | grep STATUS
 ```
 Expected output: `STATUS: deployed`
 
+- Verify that the Gateway Proxy nodes are indeed running in different nodes
+```bash
+kubectl -n gloo-system get pods -l gloo=gateway-proxy -o wide
+```
+
+Inspect the `NODE` column in the output-
+```bash
+NAME                             READY   STATUS    RESTARTS   AGE   IP           NODE                            NOMINATED NODE   READINESS GATES
+gateway-proxy-6857ff4f68-fm8cj   1/1     Running   0          20s   10.244.0.7   aks-infra-11482989-vmss000001   <none>           <none>
+gateway-proxy-6857ff4f68-gjwkw   1/1     Running   0          20s   10.244.1.4   aks-infra-11482989-vmss000000   <none>           <none>
+```
+
 - Check all resources created in your K8s namespace
 ```bash
 kubectl -n gloo-system get all
@@ -94,27 +138,28 @@ kubectl -n gloo-system get all
 Output:
 ```bash
 NAME                                 READY   STATUS    RESTARTS   AGE
-pod/discovery-65b7df6f47-764br       1/1     Running   0          34s
-pod/gateway-5685f9774f-79z5m         1/1     Running   0          34s
-pod/gateway-proxy-59c76d5558-z2t75   1/1     Running   0          34s
-pod/gloo-c69bb79c6-dkxbj             1/1     Running   0          34s
+pod/discovery-65b7df6f47-frh2g       1/1     Running   0          81s
+pod/gateway-5685f9774f-vqzsj         1/1     Running   0          81s
+pod/gateway-proxy-6857ff4f68-fm8cj   1/1     Running   0          81s
+pod/gateway-proxy-6857ff4f68-gjwkw   1/1     Running   0          81s
+pod/gloo-c69bb79c6-tbx78             1/1     Running   0          81s
 
 NAME                    TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)                               AGE
-service/gateway         ClusterIP      10.0.179.64    <none>          443/TCP                               35s
-service/gateway-proxy   LoadBalancer   10.0.192.102   13.85.198.231   80:30638/TCP,443:31858/TCP            35s
-service/gloo            ClusterIP      10.0.228.148   <none>          9977/TCP,9976/TCP,9988/TCP,9979/TCP   35s
+service/gateway         ClusterIP      10.0.184.103   <none>          443/TCP                               81s
+service/gateway-proxy   LoadBalancer   10.0.154.173   20.221.122.68   80:31307/TCP,443:30498/TCP            81s
+service/gloo            ClusterIP      10.0.129.197   <none>          9977/TCP,9976/TCP,9988/TCP,9979/TCP   81s
 
 NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/discovery       1/1     1            1           35s
-deployment.apps/gateway         1/1     1            1           35s
-deployment.apps/gateway-proxy   1/1     1            1           35s
-deployment.apps/gloo            1/1     1            1           35s
+deployment.apps/discovery       1/1     1            1           81s
+deployment.apps/gateway         1/1     1            1           81s
+deployment.apps/gateway-proxy   2/2     2            2           81s
+deployment.apps/gloo            1/1     1            1           81s
 
 NAME                                       DESIRED   CURRENT   READY   AGE
-replicaset.apps/discovery-65b7df6f47       1         1         1       35s
-replicaset.apps/gateway-5685f9774f         1         1         1       35s
-replicaset.apps/gateway-proxy-59c76d5558   1         1         1       35s
-replicaset.apps/gloo-c69bb79c6             1         1         1       35s
+replicaset.apps/discovery-65b7df6f47       1         1         1       81s
+replicaset.apps/gateway-5685f9774f         1         1         1       81s
+replicaset.apps/gateway-proxy-6857ff4f68   2         2         2       81s
+replicaset.apps/gloo-c69bb79c6             1         1         1       81s
 ```
 
 #### glooctl (optional CLI tool which assists in operations)
