@@ -10,7 +10,7 @@ Create an AKS cluster using Azure CLI from [Azure cloud shell](https://shell.azu
 
 If you already have a test Resource Group created in Azure-
 ```bash
-LOCATION=$(az group list | jq -r '.[].location')
+LOCATION=$(az group list | jq -r '.[].location' | head -1)
 RG=$(az group list | jq -r '.[].name')
 MY_CLUSTER_NAME="myAKSCluster"
 
