@@ -378,6 +378,8 @@ spec:
 EOF
 ```
 
+> Have created a Route53 record `bookinfo.arka.gl00.net` pointing to the Istio Ingress LoadBalancer.
+
 ### Edited RouteTable with updated host
 ```bash
 kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
