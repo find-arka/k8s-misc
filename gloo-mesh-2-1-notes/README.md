@@ -377,6 +377,50 @@ spec:
         - host: 'bookinfo.arka.gl00.net'
 EOF
 ```
+
+### Edited RouteTable with updated host
+```bash
+kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: productpage
+  namespace: frontend-config
+  labels:
+    expose: "true"
+spec:
+# ---------------- host ---------------------------
+  hosts:
+    - 'bookinfo.arka.gl00.net'
+# ---------------- host ---------------------------
+  virtualGateways:
+    - name: north-south-gw
+      namespace: platform-only-config
+      cluster: ${MGMT_CLUSTER}
+  workloadSelectors: []
+  http:
+    - name: productpage
+      matchers:
+      - uri:
+          exact: /productpage
+      - uri:
+          prefix: /static
+      - uri:
+          exact: /login
+      - uri:
+          exact: /logout
+      - uri:
+          prefix: /api/v1/products
+      forwardTo:
+        destinations:
+          - ref:
+              name: productpage
+              namespace: bookinfo-frontends
+            port:
+              number: 9080
+EOF
+```
+
 ## verify
 ```bash
 open https://bookinfo.arka.gl00.net/productpage
