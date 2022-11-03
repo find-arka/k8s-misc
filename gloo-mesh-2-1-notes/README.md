@@ -1,3 +1,5 @@
+> The following example configuration notes are created based on the [blog](https://github.com/solo-io/solo-cop/tree/main/blogs/workspaces) in the Solo Community of Practices repository.
+
 ## `Workspace` & `WorkspaceSettings` objects
 
 1. platform-only-workspace
