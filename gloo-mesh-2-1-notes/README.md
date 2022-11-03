@@ -41,8 +41,6 @@ spec:
     configEnabled: true
   - name: '*'
     namespaces:
-    - name: 'gloo-mesh'
-    - name: 'istio-system'
     - name: 'istio-gateways'
     - name: 'gloo-mesh-addons'
     configEnabled: false
