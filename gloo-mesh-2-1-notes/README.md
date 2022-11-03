@@ -8,8 +8,6 @@
 
 ### Within `platform-only-workspace`
 - platform-only-config (Would contain Gloo Mesh configuration files i.e. `WorkspaceSettings/VirtualGateways/RouteTables/Policies` etc.)
-- gloo-mesh
-- istio-system
 - istio-gateways
 - gloo-mesh-addons
 
