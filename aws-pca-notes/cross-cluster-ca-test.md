@@ -43,7 +43,11 @@ kubectl --context ${CURRENT_CONTEXT} -n cert-manager \
         rollout status deploy/cert-manager;
 ```
 
-
+# Re-use existing CA for test
+```bash
+export GLOO_MESH_CA_ARN="arn:aws:acm-pca:us-east-1:410461945957:certificate-authority/365f585e-6f22-4573-9c52-422ab6489f89"
+export ISTIO_CA_ARN="arn:aws:acm-pca:us-east-1:410461945957:certificate-authority/54b39e61-905f-4061-ab72-bf5164c7fcea"
+```
 
 # Re-using the IAM Policy which has access to the above CAs
 ```bash
@@ -53,12 +57,6 @@ export POLICY_ARN="arn:aws:iam::410461945957:policy/AWSPCAIssuerPolicy-arka"
 # Policy details for reference-
 
 > My CA (1 root , 2 subordinate - 1 for istio, 1 for Gloo Mesh) lives in `us-east-1`
-
-```bash
-export GLOO_MESH_CA_ARN="arn:aws:acm-pca:us-east-1:410461945957:certificate-authority/365f585e-6f22-4573-9c52-422ab6489f89"
-export ISTIO_CA_ARN="arn:aws:acm-pca:us-east-1:410461945957:certificate-authority/54b39e61-905f-4061-ab72-bf5164c7fcea"
-```
-
 ```json
 {
   "Version": "2012-10-17",
