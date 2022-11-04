@@ -46,7 +46,9 @@ kubectl --context ${CURRENT_CONTEXT} -n cert-manager \
 
 
 # Re-using the IAM Policy which has access to the above CAs
+```bash
 export POLICY_ARN="arn:aws:iam::410461945957:policy/AWSPCAIssuerPolicy-arka"
+```
 
 # Policy details for reference-
 
