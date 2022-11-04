@@ -203,6 +203,7 @@ Inspect Expected value in Issuer-
 kubectl --context $CURRENT_CONTEXT create namespace test-namespace
 ```
 
+### Create the AWSPCAIssuer object
 ```bash
 cat << EOF | kubectl apply --context $CURRENT_CONTEXT -f -
 apiVersion: awspca.cert-manager.io/v1beta1
@@ -216,7 +217,7 @@ spec:
 EOF
 ```
 
-# AWSPCAIssuer - create a cert with the help of the Issuer
+### create a cert with the help of the Issuer
 ```bash
 cat << EOF | kubectl apply --context $CURRENT_CONTEXT -f -
 kind: Certificate
@@ -247,7 +248,7 @@ spec:
 EOF
 ```
 
-## Verify that the cert got created
+### Verify that the cert got created
 ```bash
 kubectl -n test-namespace get Certificate gloo-mesh-agent-$CURRENT_CONTEXT
 ```
@@ -258,13 +259,14 @@ NAME                                     READY   SECRET                         
 gloo-mesh-agent-test-acm-cross-cluster   True    gloo-mesh-agent-test-acm-cross-cluster-tls-cert-test-namespace   50s
 ```
 
-# Extract the cert from the K8s secret
+### Extract the cert from the K8s secret
 ```bash
 kubectl --context ${CURRENT_CONTEXT} get secret -n test-namespace \
- "gloo-mesh-agent-${CURRENT_CONTEXT}-tls-cert-test-namespace" -o yaml | yq -r '.data."tls.crt"' | base64 -d > tls-crt-test-namespace-${CURRENT_CONTEXT}.pem
+  "gloo-mesh-agent-${CURRENT_CONTEXT}-tls-cert-test-namespace" \
+  -o yaml | yq -r '.data."tls.crt"' | base64 -d > tls-crt-test-namespace-${CURRENT_CONTEXT}.pem
 ```
 
-# verify that it's created by the expected Issuer
+### verify that it's created by the expected Issuer
 ```
 openssl x509 -noout -text -in "tls-crt-test-namespace-${CURRENT_CONTEXT}.pem"
 ```
