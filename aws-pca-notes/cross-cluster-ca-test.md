@@ -195,3 +195,84 @@ Inspect Expected value in Issuer-
             Not Before: Nov  4 16:17:40 2022 GMT
             Not After : Nov  4 17:17:39 2023 GMT
 ```
+
+# Test with AWSPCAIssuer
+
+### create a 'test-namespace'
+```bash
+kubectl --context $CURRENT_CONTEXT create namespace test-namespace
+```
+
+```bash
+cat << EOF | kubectl apply --context $CURRENT_CONTEXT -f -
+apiVersion: awspca.cert-manager.io/v1beta1
+kind: AWSPCAIssuer
+metadata:
+  name: issuer-test-namespace
+  namespace: test-namespace
+spec:
+  arn: ${GLOO_MESH_CA_ARN}
+  region: ${CA_REGION}
+EOF
+```
+
+# AWSPCAIssuer - create a cert with the help of the Issuer
+```bash
+cat << EOF | kubectl apply --context $CURRENT_CONTEXT -f -
+kind: Certificate
+apiVersion: cert-manager.io/v1
+metadata:
+  name: gloo-mesh-agent-$CURRENT_CONTEXT
+  namespace: test-namespace
+spec:
+  commonName: gloo-mesh-agent-$CURRENT_CONTEXT
+  dnsNames:
+    # Must match the cluster name used in the helm chart install
+    - "${CLUSTER}"
+  duration: 8760h # 365 days
+# ---------------- Issuer for Gloo Mesh certs ---------------------------
+  issuerRef:
+    group: awspca.cert-manager.io
+    kind: AWSPCAIssuer
+    name: issuer-test-namespace
+# ---------------- Issuer for Gloo Mesh certs ---------------------------
+  renewBefore: 360h # 15 days
+  secretName: gloo-mesh-agent-$CURRENT_CONTEXT-tls-cert-test-namespace
+  usages:
+    - server auth
+    - client auth
+  privateKey:
+    algorithm: "RSA"
+    size: 2048
+EOF
+```
+
+## Verify that the cert got created
+```bash
+kubectl -n test-namespace get Certificate gloo-mesh-agent-$CURRENT_CONTEXT
+```
+
+success output:
+```bash
+NAME                                     READY   SECRET                                                           AGE
+gloo-mesh-agent-test-acm-cross-cluster   True    gloo-mesh-agent-test-acm-cross-cluster-tls-cert-test-namespace   50s
+```
+
+# Extract the cert from the K8s secret
+```bash
+kubectl --context ${CURRENT_CONTEXT} get secret -n test-namespace \
+ "gloo-mesh-agent-${CURRENT_CONTEXT}-tls-cert-test-namespace" -o yaml | yq -r '.data."tls.crt"' | base64 -d > tls-crt-test-namespace-${CURRENT_CONTEXT}.pem
+```
+
+# verify that it's created by the expected Issuer
+```
+openssl x509 -noout -text -in "tls-crt-test-namespace-${CURRENT_CONTEXT}.pem"
+```
+
+Inspect Expected value in Issuer-
+```
+        Issuer: C = US, O = Solo.io, OU = Consulting, ST = MA, CN = Intermediate CA Gloo-Mesh, L = Boston
+        Validity
+            Not Before: Nov  4 17:20:18 2022 GMT
+            Not After : Nov  4 18:20:17 2023 GMT
+```
