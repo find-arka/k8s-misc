@@ -216,8 +216,6 @@ kind: RouteTable
 metadata:
   name: productpage
   namespace: frontend-config
-  labels:
-    expose: "true"
 spec:
   hosts:
     - '*'
@@ -388,8 +386,6 @@ kind: RouteTable
 metadata:
   name: productpage
   namespace: frontend-config
-  labels:
-    expose: "true"
 spec:
 # ---------------- host ---------------------------
   hosts:
