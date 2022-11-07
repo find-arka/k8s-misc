@@ -185,6 +185,9 @@ spec:
 EOF
 ```
 
+After creating these `Workspaces` and `WorkspaceSettings` Gloo Mesh UI dashboard should look like the following-
+![workspace](./images/workspace.png)
+
 ## Virtual Gateway
 ```bash
 kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
