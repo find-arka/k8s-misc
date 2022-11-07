@@ -185,7 +185,8 @@ spec:
 EOF
 ```
 
-After creating these `Workspaces` and `WorkspaceSettings` Gloo Mesh UI dashboard should look like the following-
+> After creating the above `Workspace` and `WorkspaceSettings` objects, Gloo Mesh UI dashboard should look like the following-
+
 ![workspace](./images/workspace.png)
 
 ## Virtual Gateway
