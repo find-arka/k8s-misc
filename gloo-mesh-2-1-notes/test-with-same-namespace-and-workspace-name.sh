@@ -1,43 +1,23 @@
-> The following example configuration notes are created based on the [blog](https://github.com/solo-io/solo-cop/tree/main/blogs/workspaces) in the Solo Community of Practices repository.
+Scenario:
+- No `-config` Namespaces to be used to save Gloo Mesh configuration objects.
+- Workspace name would be same as Application Namepsace name.
+- Config for applications (VirtualGateway, Routetable would be created in management cluster)
 
-## `Workspace` & `WorkspaceSettings` objects
-
-1. platform-only-workspace
-2. frontend-workspace
-3. backend-workspace
-
-## Corresponding Namespaces
-
-### Within `platform-only-workspace`
-- platform-only-config (Would contain Gloo Mesh configuration files i.e. `WorkspaceSettings/VirtualGateways/RouteTables/Policies` etc.)
-- istio-gateways
-- gloo-mesh-addons
-
-### Within `frontend-workspace`
-- frontend-config (Would contain Gloo Mesh configuration files i.e. `WorkspaceSettings/VirtualGateways/RouteTables/Policies` etc.)
-- bookinfo-frontends
-
-### Within `backend-workspace`
-- backend-config (Would contain Gloo Mesh configuration files i.e. `WorkspaceSettings/VirtualGateways/RouteTables/Policies` etc.)
-- bookinfo-backends
-
-## Create Workspaces
-
-### platform-only-workspace
-```bash
-kubectl --context ${MGMT_CONTEXT} create namespace "platform-only-config";
+kubectl --context ${MGMT_CONTEXT} create ns bookinfo-frontends
+kubectl --context ${MGMT_CONTEXT} create ns bookinfo-backends
+kubectl --context ${MGMT_CONTEXT} create ns platform-only
 
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
 metadata:
-  name: platform-only-workspace
+  name: platform-only
   namespace: gloo-mesh
 spec:
   workloadClusters:
   - name: ${MGMT_CLUSTER}
     namespaces:
-    - name: platform-only-config
+    - name: platform-only
     configEnabled: true
   - name: '*'
     namespaces:
@@ -45,67 +25,56 @@ spec:
     - name: 'gloo-mesh-addons'
     configEnabled: false
 EOF
-```
-
-### frontend-workspace
-```bash
-kubectl --context ${MGMT_CONTEXT} create namespace "frontend-config";
 
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
 metadata:
-  name: frontend-workspace
+  name: bookinfo-frontends
   namespace: gloo-mesh
 spec:
   workloadClusters:
   - name: ${MGMT_CLUSTER}
     namespaces:
-    - name: frontend-config
+    - name: 'bookinfo-frontends'
     configEnabled: true
   - name: '*'
     namespaces:
     - name: 'bookinfo-frontends'
-    configEnabled: false
 EOF
-```
 
-### backend-workspace
-```bash
-kubectl --context ${MGMT_CONTEXT} create namespace "backend-config";
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
 metadata:
-  name: backend-workspace
+  name: bookinfo-backends
   namespace: gloo-mesh
 spec:
   workloadClusters:
   - name: ${MGMT_CLUSTER}
     namespaces:
-    - name: backend-config
+    - name: 'bookinfo-backends'
     configEnabled: true
   - name: '*'
     namespaces:
     - name: 'bookinfo-backends'
     configEnabled: false
 EOF
-```
 
-## Create WorkspaceSettings
+kubectl --context ${MGMT_CONTEXT} get Namespaces
+kubectl --context ${MGMT_CONTEXT} -n gloo-mesh get Workspace
 
-### platform-only-workspace
-```bash
+# # # # # # # WorkspaceSettings # # # # # # # 
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: admin.gloo.solo.io/v2
 kind: WorkspaceSettings
 metadata:
-  name: platform-only-workspace
-  namespace: platform-only-config
+  name: platform-only
+  namespace: platform-only
 spec:
   importFrom:
   - workspaces:
-    - name: frontend-workspace
+    - name: bookinfo-frontends
   exportTo:
   - workspaces:
     - name: "*"
@@ -125,25 +94,22 @@ spec:
       enabled: true
       trimProxyConfig: true
 EOF
-```
 
-### frontend-workspace
-```bash
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: admin.gloo.solo.io/v2
 kind: WorkspaceSettings
 metadata:
-  name: frontend-workspace
-  namespace: frontend-config
+  name: bookinfo-frontends
+  namespace: bookinfo-frontends
 spec:
   importFrom:
   - workspaces:
-    - name: backend-workspace
+    - name: bookinfo-backends
   - workspaces:
-    - name: platform-only-workspace    # in case we decide to use the Services from addons ext auth etc.
+    - name: platform-only    # in case we decide to use the Services from addons ext auth etc.
   exportTo:
   - workspaces:
-    - name: platform-only-workspace
+    - name: platform-only
   options:
     eastWestGateways:
     - selector:
@@ -155,23 +121,20 @@ spec:
       enabled: true
       trimProxyConfig: true
 EOF
-```
 
-### backend-workspace
-```bash
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: admin.gloo.solo.io/v2
 kind: WorkspaceSettings
 metadata:
-  name: backend-workspace
-  namespace: backend-config
+  name: bookinfo-backends
+  namespace: bookinfo-backends
 spec:
   exportTo:
   - workspaces:
-    - name: frontend-workspace
+    - name: bookinfo-frontends
   importFrom:
   - workspaces:
-    - name: platform-only-workspace    # in case we decide to use the Services from addons ext auth etc.
+    - name: platform-only    # in case we decide to use the Services from addons ext auth etc.
   options:
     eastWestGateways:
     - selector:
@@ -183,20 +146,16 @@ spec:
       enabled: true
       trimProxyConfig: true
 EOF
-```
 
-> After creating the above `Workspace` and `WorkspaceSettings` objects, Gloo Mesh UI dashboard should look like the following-
 
-![workspace](./images/workspace.png)
+##### VirtualGateway ##### 
 
-## Virtual Gateway
-```bash
 kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
   name: north-south-gw
-  namespace: platform-only-config
+  namespace: platform-only
 spec:
   workloads:
     - selector:
@@ -210,22 +169,20 @@ spec:
       allowedRouteTables:
         - host: '*'
 EOF
-```
 
-## RouteTable
-```bash
+##### RouteTable ##### 
 kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
   name: productpage
-  namespace: frontend-config
+  namespace: bookinfo-frontends
 spec:
   hosts:
     - '*'
   virtualGateways:
     - name: north-south-gw
-      namespace: platform-only-config
+      namespace: platform-only
       cluster: ${MGMT_CLUSTER}
   workloadSelectors: []
   http:
@@ -249,19 +206,17 @@ spec:
             port:
               number: 9080
 EOF
-```
 
-## Multi cluster routing using `VirtualDestination`
-```bash
+##### VirtualDestination ##### 
 kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualDestination
 metadata:
   name: reviews
-  namespace: backend-config
+  namespace: bookinfo-backends
 spec:
   hosts:
-  - 'reviews.backend-config.solo-io.mesh'
+  - 'reviews.bookinfo-backends.solo-io.mesh'
   services:
   - labels:
       app: reviews
@@ -269,38 +224,20 @@ spec:
   - number: 9080
     protocol: HTTP
 EOF
-```
 
-## Edit the REVIEWS_HOSTNAME env value to use the VirtualDestination
-```bash
 kubectl --context ${REMOTE_CONTEXT1} -n bookinfo-frontends \
     set env deploy/productpage-v1 \
-    REVIEWS_HOSTNAME="reviews.backend-config.solo-io.mesh"
+    REVIEWS_HOSTNAME="reviews.bookinfo-backends.solo-io.mesh"
 
 kubectl --context ${REMOTE_CONTEXT2} -n bookinfo-frontends \
     set env deploy/productpage-v1 \
-    REVIEWS_HOSTNAME="reviews.backend-config.solo-io.mesh"
-```
+    REVIEWS_HOSTNAME="reviews.bookinfo-backends.solo-io.mesh"
 
-## Verify
-
-```bash
 export ENDPOINT_HTTP_GW_CLUSTER1=$(kubectl --context ${REMOTE_CONTEXT1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):80
 open "http://${ENDPOINT_HTTP_GW_CLUSTER1}/productpage"
-```
 
-### logs from east-west gateway
-```bash
 kubectl --context ${REMOTE_CONTEXT2} -n istio-gateways logs -f deploy/istio-eastwestgateway
-```
 
-```bash
-[2022-11-03T18:22:51.440Z] "- - -" 0 - - - "-" 12184 17251 59279 - "-" "-" "-" "-" "172.16.0.60:9080" outbound_.9080_._.reviews.backend-config.solo-io.mesh 172.16.1.139:40738 172.16.1.139:15443 172.16.0.74:64843 outbound_.9080_._.reviews.backend-config.solo-io.mesh -
-[2022-11-03T18:22:57.722Z] "- - -" 0 - - - "-" 12184 17257 59959 - "-" "-" "-" "-" "172.16.1.182:9080" outbound_.9080_._.reviews.backend-config.solo-io.mesh 172.16.1.139:36108 172.16.1.139:15443 172.16.1.203:49383 outbound_.9080_._.reviews.backend-config.solo-io.mesh -
-```
-# Access on HTTPS endpoint
-
-```bash
 cat << EOF | kubectl apply --context ${REMOTE_CONTEXT1} -f -
 kind: Certificate
 apiVersion: cert-manager.io/v1
@@ -328,41 +265,19 @@ spec:
     algorithm: "RSA"
     size: 2048
 EOF
-```
 
-## verify cert creation
-```bash
 kubectl --context ${REMOTE_CONTEXT1} \
   -n istio-gateways \
   get certificate \
   certificate-north-south-gw-${REMOTE_CLUSTER1}
-```
-> Success message-
-```bash
-NAME                                                        READY   SECRET                                                     AGE
-certificate-north-south-gw-cluster-1-arka-10-31-2022-demo   True    tls-secret-north-south-gw-cluster-1-arka-10-31-2022-demo   34s
-```
 
-## verify the secret
-```bash
-kubectl --context ${REMOTE_CONTEXT1} \
-  -n istio-gateways \
-  get secret tls-secret-north-south-gw-${REMOTE_CLUSTER1}
-```
 
-```bash
-NAME                                                       TYPE                DATA   AGE
-tls-secret-north-south-gw-cluster-1-arka-10-31-2022-demo   kubernetes.io/tls   3      97s
-```
-
-## Edit Virtual Gateway
-```bash
 kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
   name: north-south-gw
-  namespace: platform-only-config
+  namespace: platform-only
 spec:
   workloads:
     - selector:
@@ -381,18 +296,13 @@ spec:
       allowedRouteTables:
         - host: 'bookinfo.arka.gl00.net'
 EOF
-```
 
-> Have created a Route53 record `bookinfo.arka.gl00.net` pointing to the Istio Ingress LoadBalancer.
-
-### Edited RouteTable with updated host
-```bash
 kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
   name: productpage
-  namespace: frontend-config
+  namespace: bookinfo-frontends
 spec:
 # ---------------- host ---------------------------
   hosts:
@@ -400,7 +310,7 @@ spec:
 # ---------------- host ---------------------------
   virtualGateways:
     - name: north-south-gw
-      namespace: platform-only-config
+      namespace: platform-only
       cluster: ${MGMT_CLUSTER}
   workloadSelectors: []
   http:
@@ -424,17 +334,3 @@ spec:
             port:
               number: 9080
 EOF
-```
-
-## verify
-```bash
-open https://bookinfo.arka.gl00.net/productpage
-```
-
-### Screenshots
-
-![graph-view](./images/graph-view.png)
-
-![mTLS-cross-cluster](./images/mTLS-cross-cluster.png)
-
-![bookinfo](./images/bookinfo.png)
