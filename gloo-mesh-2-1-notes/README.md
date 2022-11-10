@@ -438,3 +438,148 @@ open https://bookinfo.arka.gl00.net/productpage
 ![mTLS-cross-cluster](./images/mTLS-cross-cluster.png)
 
 ![bookinfo](./images/bookinfo.png)
+
+# Multicluster Routing with `productpage`
+
+Create a VirtualDestination for `productpage` (Creates the `ServiceEntry` for "productpage.global")
+```bash
+kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: productpage
+  namespace: frontend-config
+spec:
+  hosts:
+  - productpage.global
+  services:
+  - namespace: bookinfo-frontends
+    labels:
+      app: productpage
+  ports:
+    - number: 9080
+      protocol: HTTP
+EOF
+```
+
+Edit the existing routetable so that the Virtual destination is used.
+```bash
+kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: productpage
+  namespace: frontend-config
+spec:
+  hosts:
+    - 'bookinfo.arka.gl00.net'
+  virtualGateways:
+    - name: north-south-gw
+      namespace: platform-only-config
+      cluster: ${MGMT_CLUSTER}
+  workloadSelectors: []
+  http:
+    - name: productpage
+      matchers:
+      - uri:
+          exact: /productpage
+      - uri:
+          prefix: /static
+      - uri:
+          exact: /login
+      - uri:
+          exact: /logout
+      - uri:
+          prefix: /api/v1/products
+      forwardTo:
+        destinations:
+# ---------------- Forward to VirtualDestination change start ---------------------------
+# ---------------- Previous dest-> name: productpage namespace: bookinfo-frontends ---------------------------
+          - ref:
+              name: productpage
+              namespace: frontend-config
+            kind: VIRTUAL_DESTINATION
+# ---------------- Forward to VirtualDestination change end ---------------------------
+            port:
+              number: 9080
+EOF
+```
+# Failover with `productpage`
+
+Add `failover: "true"` label to the `VirtualDestination`. This label would be used as a selector later.
+```bash
+kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: productpage
+  namespace: frontend-config
+# ---------------- Add label ---------------------------
+  labels:
+    failover: "true"
+# ---------------- Add label ---------------------------
+spec:
+  hosts:
+  - productpage.global
+  services:
+  - namespace: bookinfo-frontends
+    labels:
+      app: productpage
+  ports:
+    - number: 9080
+      protocol: HTTP
+EOF
+```
+
+Create the FailoverPolicy
+```bash
+kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
+apiVersion: resilience.policy.gloo.solo.io/v2
+kind: FailoverPolicy
+metadata:
+  name: failover
+  namespace: frontend-config
+spec:
+  applyToDestinations:
+  - kind: VIRTUAL_DESTINATION
+    selector:
+      labels:
+        failover: "true"
+  config:
+    localityMappings: []
+EOF
+```
+
+Create the OutlierDetectionPolicy to define the configuration for when the failover should happen
+```bash
+kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
+apiVersion: resilience.policy.gloo.solo.io/v2
+kind: OutlierDetectionPolicy
+metadata:
+  name: outlier-detection
+  namespace: frontend-config
+spec:
+  applyToDestinations:
+  - kind: VIRTUAL_DESTINATION
+    selector:
+      labels:
+        failover: "true"
+  config:
+    consecutiveErrors: 2
+    interval: 5s
+    baseEjectionTime: 30s
+    maxEjectionPercent: 100
+EOF
+```
+
+Reduce the replicacount of the deployment in workload cluster 1 to test that the failover to cluster 2 is working-
+```bash
+kubectl --context ${REMOTE_CONTEXT1} -n bookinfo-frontends scale deploy/productpage-v1 --replicas=0
+kubectl --context ${REMOTE_CONTEXT1} -n bookinfo-frontends wait --for=jsonpath='{.spec.replicas}'=0 deploy/productpage-v1
+```
+
+Follow logs of productpage running in cluster 2-
+```bash
+kubectl --context ${REMOTE_CONTEXT2} -n bookinfo-frontends logs -f -l "app=productpage"
+```
+Try accessing the application and it should still work.
