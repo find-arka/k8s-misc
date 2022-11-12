@@ -583,3 +583,85 @@ Follow logs of productpage running in cluster 2-
 kubectl --context ${REMOTE_CONTEXT2} -n bookinfo-frontends logs -f -l "app=productpage"
 ```
 Try accessing the application and it should still work.
+
+
+## ExternalService 
+
+Run sample `busyboxplus` pod to test access
+```bash
+kubectl -n bookinfo-backends run curl-busybox --image=radial/busyboxplus:curl -i --tty
+```
+
+ExternalEndpoint config to access nginx running in EC2
+```bash
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: ExternalEndpoint
+metadata:
+  name: nginx-external-endpoint
+  namespace: backend-config
+  labels:
+    # Label that the external service will select
+    external-endpoint: nginx
+spec:
+  # IP on EC2 where nginx is running
+  address: 10.0.0.229
+  ports:
+    - name: http
+      number: 80
+EOF
+```
+
+Create ExternalService to 
+```bash
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: ExternalService
+metadata:
+  name: nginx-external-service
+  namespace: backend-config
+spec:
+  hosts:
+  # Arbitrary, internal-only hostname assigned to the endpoint
+  - "my-remote-nginx.com"
+  ports:
+  - name: http
+    number: 80
+    protocol: HTTP
+    targetPort:
+      number: 80
+  selector:
+    # Selects the ExternalEndpoint by label
+    external-endpoint: nginx
+EOF
+```
+
+Created an ExternalService in the Management cluster, in the config namespace for www.google.com.
+```bash
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: ExternalService
+metadata:
+  name: google-ext-svc
+  namespace: backend-config
+spec:
+  hosts:
+  - www.google.com
+  ports:
+  - name: http
+    number: 80
+    protocol: HTTP
+EOF
+```
+This created the desired ServiceEntry object in the workload cluster.
+
+We were able to exec into a pod in the workspace where the `ExternalService` was deployed and successfully curl www.google.com.
+```
+kubectl -n backend-config run curl-busybox --image=radial/busyboxplus:curl -i --tty
+```
+```
+curl -Iv http://www.google.com
+```
+^ Received 200 response
+
+We were also able to exec into a pod outside the workspace and we were not able to reach by curl `curl -Iv http://www.google.com` since the REGISTRY_ONLY mode was set in Istio
