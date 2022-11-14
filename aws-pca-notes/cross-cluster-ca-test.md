@@ -6,6 +6,7 @@ export CURRENT_CONTEXT=test-acm-cross-cluster
 
 export CLUSTER_REGION=us-west-1
 export CA_REGION=us-east-1
+```
 
 ```bash
 eksctl create cluster --name "${CLUSTER}" --region "${CLUSTER_REGION}" --tags "created-by=${USER},team=${TEAM},purpose=customer-support" --vpc-cidr=192.168.0.0/21
