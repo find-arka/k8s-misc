@@ -46,13 +46,13 @@ kubectl --context ${CURRENT_CONTEXT} -n cert-manager \
 
 # Re-use existing CA for test
 ```bash
-export GLOO_MESH_CA_ARN="arn:aws:acm-pca:us-east-1:410461945957:certificate-authority/365f585e-6f22-4573-9c52-422ab6489f89"
-export ISTIO_CA_ARN="arn:aws:acm-pca:us-east-1:410461945957:certificate-authority/54b39e61-905f-4061-ab72-bf5164c7fcea"
+export GLOO_MESH_CA_ARN="arn:aws:acm-pca:us-east-1:<REDACTED>:certificate-authority/<REDACTED>"
+export ISTIO_CA_ARN="arn:aws:acm-pca:us-east-1:<REDACTED>:certificate-authority/<REDACTED>"
 ```
 
 # Re-using the IAM Policy which has access to the above CAs
 ```bash
-export POLICY_ARN="arn:aws:iam::410461945957:policy/AWSPCAIssuerPolicy-arka"
+export POLICY_ARN="arn:aws:iam::<REDACTED>:policy/AWSPCAIssuerPolicy-arka"
 ```
 
 # Policy details for reference-
