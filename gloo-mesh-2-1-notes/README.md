@@ -592,7 +592,7 @@ Run sample `busyboxplus` pod to test access
 kubectl -n bookinfo-backends run curl-busybox --image=radial/busyboxplus:curl -i --tty
 ```
 
-ExternalEndpoint config to access nginx running in EC2
+ExternalEndpoint config to access nginx running in an EC2 instance
 ```bash
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: networking.gloo.solo.io/v2
@@ -612,7 +612,7 @@ spec:
 EOF
 ```
 
-Create ExternalService to 
+Create ExternalService and use the above endpoint
 ```bash
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: networking.gloo.solo.io/v2
@@ -677,16 +677,12 @@ metadata:
   name: temp-test-nginx
   namespace: bookinfo-backends
 spec:
-  endpoints:
-  - address: 10.0.0.229
-    labels:
-      external-endpoint: nginx
-    ports:
-      http: 80
+  addresses:
+    - "10.0.0.229"
   exportTo:
-  - .
+    - .
   hosts:
-  - 10.0.0.229
+    - "10.0.0.229"
   ports:
   - name: http
     number: 80
