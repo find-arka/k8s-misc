@@ -14,6 +14,7 @@ spec:
  options:
    serviceIsolation:
      enabled: true
+     trimProxyConfig: true
 EOF
 ```
 
