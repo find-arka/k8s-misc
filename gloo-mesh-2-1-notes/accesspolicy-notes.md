@@ -64,9 +64,11 @@ spec:
   - name: ${MGMT_CONTEXT}
     namespaces:
     - name: ${NAMESPACE}
-  - name: '*'
+    configEnabled: true
+  - name: '*' # --- Instead of name: '*' mentioning cluster names explicitly is recommended
     namespaces:
     - name: ${NAMESPACE}
+    configEnabled: false
 EOF
 done
 ```
@@ -109,6 +111,8 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: http-client
+  labels:
+    app: http-client
   namespace: client-namespace
   labels:
     account: http-client
@@ -160,6 +164,8 @@ kind: Service
 metadata:
   name: nginx
   namespace: server-namespace
+  labels:
+    app: nginx
 spec:
   selector:
     app: nginx
@@ -200,13 +206,12 @@ kubectl --context ${REMOTE_CONTEXT1} -n server-namespace \
 
 - Attempt curl-ing nginx from http-client
 ```bash
-kubectl --context ${REMOTE_CONTEXT1} -n client-namespace exec -it deployments/http-client-deployment -- curl -I nginx.server-namespace.svc.cluster.local
+kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
+  exec -it deployments/http-client-deployment \
+  -- curl -I nginx.server-namespace.svc.cluster.local
 ```
 Expectation: Access Denied (since there is no access policy)
 Result: (Matches Expectation)
-```bash
-kubectl --context ${REMOTE_CONTEXT1} -n client-namespace exec -it deployments/http-client-deployment -- curl -I nginx.server-namespace.svc.cluster.local
-```
 ```bash
 HTTP/1.1 403 Forbidden
 content-length: 19
@@ -217,7 +222,9 @@ x-envoy-upstream-service-time: 1
 ```
 
 ```
-kubectl --context ${REMOTE_CONTEXT1} -n client-namespace exec -it deployments/http-client-deployment -- curl nginx.server-namespace.svc.cluster.local
+kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
+  exec -it deployments/http-client-deployment \
+  -- curl nginx.server-namespace.svc.cluster.local
 ```
 `RBAC: access denied`
 > **Matches Expectation**
@@ -254,9 +261,11 @@ EOF
 But this has error in gloo-mesh-ui
 <img width="960" alt="Screenshot 2022-11-16 at 12 20 18 PM" src="https://user-images.githubusercontent.com/21124287/202249464-5037f844-38dd-4da9-8044-abfbc7aab0a7.png">
 
-This could be a UI bug since http-client can now talk to nginx-
+This is a UI bug (being addressed by eng) but not a blocker, since http-client can now talk to nginx
 ```
-kubectl --context ${REMOTE_CONTEXT1} -n client-namespace exec -it deployments/http-client-deployment -- curl -I nginx.server-namespace.svc.cluster.local
+kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
+  exec -it deployments/http-client-deployment \
+  -- curl nginx.server-namespace.svc.cluster.local
 ```
 
 ```bash
@@ -270,57 +279,6 @@ etag: "5c0692e1-264"
 accept-ranges: bytes
 x-envoy-upstream-service-time: 7
 ```
-
-- Attempting with `applyToDestinations` (to see if Gloo Mesh UI error goes away)
-
-```bash
-kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
-apiVersion: security.policy.gloo.solo.io/v2
-kind: AccessPolicy
-metadata:
-  name: server-resource-access
-  namespace: server-namespace
-spec:
-# ---- different selector ---
-  applyToDestinations:
-  - selector:
-      name: nginx
-      namespace: server-namespace
-      cluster: ${REMOTE_CONTEXT1}
-      workspace: server-namespace
-# ---- different selector ---
-  config:
-    authn:
-      tlsMode: STRICT
-    authz:
-      allowedClients:
-      - serviceAccountSelector:
-          cluster: ${REMOTE_CONTEXT1}
-          namespace: client-namespace
-          name: http-client
-EOF
-```
-
-The UI seems partially fixed. We still don't see any rows in `Allowed Clients`
-We see nginx in `Applied to Destinations`
-& the traffic from http-client to nginx works i.e.
-
-```bash
-kubectl --context ${REMOTE_CONTEXT1} -n client-namespace exec -it deployments/http-client-deployment -- curl -I nginx.server-namespace.svc.cluster.local
-```
-
-```bash
-HTTP/1.1 200 OK
-server: envoy
-date: Wed, 16 Nov 2022 17:26:26 GMT
-content-type: text/html
-content-length: 612
-last-modified: Tue, 04 Dec 2018 14:44:49 GMT
-etag: "5c0692e1-264"
-accept-ranges: bytes
-x-envoy-upstream-service-time: 7
-```
-
 > Note for future reference:
 We just have the http-client to nginx allow access policy in place, and no other access policy is in place:
 ```bash
@@ -337,7 +295,6 @@ No resources found
 
 
 ## Test that no other apps (with diff serviceaccount) from cross namespace/workspace can talk to nginx
-
 ```bash
 kubectl apply --context ${REMOTE_CONTEXT1} -f- <<EOF
 apiVersion: v1
@@ -638,33 +595,3 @@ x-envoy-upstream-service-time: 28
 ```
 
 Matches expectation.
-
-
-## Alternate accessPolicy with `applyToDestinations`
-```bash
-kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
-apiVersion: security.policy.gloo.solo.io/v2
-kind: AccessPolicy
-metadata:
-  name: server-resource-access
-  namespace: server-namespace
-spec:
-# ---- different selector ---
-  applyToDestinations:
-  - selector:
-      name: nginx
-      namespace: server-namespace
-      cluster: ${REMOTE_CONTEXT1}
-      workspace: server-namespace
-# ---- different selector ---
-  config:
-    authn:
-      tlsMode: STRICT
-    authz:
-      allowedClients:
-      - serviceAccountSelector:
-          cluster: ${REMOTE_CONTEXT1}
-          namespace: client-namespace
-          name: http-client
-EOF
-```
