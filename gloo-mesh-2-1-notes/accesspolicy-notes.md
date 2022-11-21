@@ -595,3 +595,83 @@ x-envoy-upstream-service-time: 28
 ```
 
 Matches expectation.
+
+# import-export service by labels example
+```bash
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: client-namespace
+  namespace: client-namespace
+spec:
+  importFrom:
+# --- client imports only nginx - selects by label ---
+  - workspaces:
+    - name: server-namespace
+    resources:
+    - kind: SERVICE
+      labels:
+        app: nginx
+  options:
+    serviceIsolation:
+      enabled: true
+      trimProxyConfig: true
+EOF
+
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: server-namespace
+  namespace: server-namespace
+spec:
+  exportTo:
+# --- export only nginx service to client-namespace ---
+  - workspaces:
+    - name: client-namespace
+    resources:
+    - kind: SERVICE
+      labels:
+        app: nginx
+  options:
+    serviceIsolation:
+      enabled: true
+      trimProxyConfig: true
+EOF
+```
+
+check endpoints
+```bash
+istioctl --context $REMOTE_CONTEXT1 -n client-namespace pc endpoints deploy/http-client-deployment
+```
+
+output
+```bash
+ENDPOINT                                                STATUS      OUTLIER CHECK     CLUSTER
+10.0.0.30:80                                            HEALTHY     OK                outbound|80||http-client.client-namespace.svc.cluster.local
+10.0.1.51:80                                            HEALTHY     OK                outbound|80||nginx.server-namespace.svc.cluster.local
+127.0.0.1:15000                                         HEALTHY     OK                prometheus_stats
+127.0.0.1:15020                                         HEALTHY     OK                agent
+172.20.62.76:9977                                       HEALTHY     OK                envoy_accesslog_service
+172.20.62.76:9977                                       HEALTHY     OK                envoy_metrics_service
+unix://./etc/istio/proxy/XDS                            HEALTHY     OK                xds-grpc
+unix://./var/run/secrets/workload-spiffe-uds/socket     HEALTHY     OK                sds-grpc
+```
+
+```
+kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
+  exec -it deployments/http-client-deployment \
+  -- curl -I nginx.server-namespace.svc.cluster.local
+```
+```
+HTTP/1.1 200 OK
+server: envoy
+date: Mon, 21 Nov 2022 17:16:01 GMT
+content-type: text/html
+content-length: 612
+last-modified: Tue, 04 Dec 2018 14:44:49 GMT
+etag: "5c0692e1-264"
+accept-ranges: bytes
+x-envoy-upstream-service-time: 7
+```
