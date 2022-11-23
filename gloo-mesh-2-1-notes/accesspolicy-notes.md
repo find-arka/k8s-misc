@@ -1,11 +1,11 @@
-# _"zero-trust"_ test notes
+# Notes from _"zero-trust"_ testing
 
-Please find below the test notes related to _zero-trust_ framework with Gloo Mesh 2.x
+Contains the test notes related to _zero-trust_ with Gloo Mesh 2.x
 
 We have tested the following 2 approaches for setting up trust boundaries:
 
-1. Selectively importing exporting objects via `WorkspaceSettings` based on need, and enabling Workspace level `serviceIsolation`.
-2. Use `AccessPolicy`
+1. Selectively importing exporting objects via `WorkspaceSettings`, and enabling Workspace level `serviceIsolation`.
+2. Deny all traffic by default and use `AccessPolicy` to explicitly allow traffic selectively.
 
 # Test environment overview
 
@@ -168,30 +168,12 @@ done
 
 ## Appproach 1 enable `serviceIsolation` and selectively import/export resources via `WorkspaceSettings`
 
-### Create the `WorkspaceSettings`
-```
-kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
-apiVersion: admin.gloo.solo.io/v2
-kind: WorkspaceSettings
-metadata:
-  name: client-namespace
-  namespace: client-namespace
-spec:
-  importFrom:
-# --- client imports only nginx - selects by label ---
-  - workspaces:
-    - name: server-namespace
-    resources:
-    - kind: SERVICE
-      labels:
-        app: nginx
-  options:
-# --- serviceIsolation and trimProxyConfig enabled ---
-    serviceIsolation:
-      enabled: true
-      trimProxyConfig: true
-EOF
+- In this approach, access to a service would be allowed within a Workspace. If there are multiple namespaces within this workspace, access would be allowed by default across those namespaces which is within the `Workspace`.
+- Access to a service would be also allowed from another `Workspace` to which the service was exported to. The other Workspace also needs to write the complimentary `importFrom` spec in `WorkspaceSettings` for this cross Workspace access to work.
 
+### Create the `WorkspaceSettings`
+
+```zsh
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: admin.gloo.solo.io/v2
 kind: WorkspaceSettings
@@ -213,9 +195,31 @@ spec:
       enabled: true
       trimProxyConfig: true
 EOF
+
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: client-namespace
+  namespace: client-namespace
+spec:
+  importFrom:
+# --- client imports only nginx - selects by label ---
+  - workspaces:
+    - name: server-namespace
+    resources:
+    - kind: SERVICE
+      labels:
+        app: nginx
+  options:
+# --- serviceIsolation and trimProxyConfig enabled ---
+    serviceIsolation:
+      enabled: true
+      trimProxyConfig: true
+EOF
 ```
 
-### Test Access - expect to get 200
+### Test Access from `client-namespace` Workspace - expect to get 200
 
 ```zsh
 kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
@@ -254,6 +258,54 @@ ENDPOINT                                                STATUS      OUTLIER CHEC
 unix://./etc/istio/proxy/XDS                            HEALTHY     OK                xds-grpc
 unix://./var/run/secrets/workload-spiffe-uds/socket     HEALTHY     OK                sds-grpc
 ```
+
+### Test Access from `server-namespace` Workspace - expect to get 200
+
+- Deploy the same `http-client` application in `server-namespace` and attempt accessing.
+- We expect a 200 since the traffic is within the Workspace boundary.
+```zsh
+kubectl --context ${REMOTE_CONTEXT1} -n server-namespace \
+  exec -it deployments/http-client-deployment \
+  -- curl -I nginx.server-namespace.svc.cluster.local
+```
+Output:
+```zsh
+HTTP/1.1 200 OK
+server: envoy
+date: Wed, 23 Nov 2022 21:25:26 GMT
+content-type: text/html
+content-length: 612
+last-modified: Tue, 04 Dec 2018 14:44:49 GMT
+etag: "5c0692e1-264"
+accept-ranges: bytes
+x-envoy-upstream-service-time: 12
+```
+This matches our expectation.
+
+
+### Test Access from a 3rd Workspace - expect to get 502
+
+- Deploy the same `http-client` application in a 3rd namespace and attempt accessing. 
+- Deployed the app in an existing namespace: `bookinfo-backends`
+- We expect a 502 since the traffic is outside the Workspace boundary and also the service is not exported, imported.
+```zsh
+kubectl --context ${REMOTE_CONTEXT1} -n bookinfo-backends \
+  exec -it deployments/http-client-deployment \
+  -- curl -I nginx.server-namespace.svc.cluster.local
+```
+Output:
+```zsh
+HTTP/1.1 502 Bad Gateway
+date: Wed, 23 Nov 2022 21:57:03 GMT
+server: envoy
+transfer-encoding: chunked
+```
+
+```bash
+istioctl --context $REMOTE_CONTEXT1 -n bookinfo-backends pc endpoints deploy/http-client-deployment | grep nginx
+```
+Zero rows returned. No endpoint for `nginx` known
+
 
 ## Approach 2 Zero trust with `AccessPolicy` approach test notes
 
