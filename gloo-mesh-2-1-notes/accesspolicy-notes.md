@@ -166,7 +166,7 @@ EOF
 done
 ```
 
-## Appproach 1enable `serviceIsolation` and selectively import/export resources via `WorkspaceSettings`
+## Appproach 1 enable `serviceIsolation` and selectively import/export resources via `WorkspaceSettings`
 
 ### Create the `WorkspaceSettings`
 ```
@@ -255,7 +255,7 @@ unix://./etc/istio/proxy/XDS                            HEALTHY     OK          
 unix://./var/run/secrets/workload-spiffe-uds/socket     HEALTHY     OK                sds-grpc
 ```
 
-## Zero trust with `AccessPolicy` approach test notes
+## Approach 2 Zero trust with `AccessPolicy` approach test notes
 
 ### Create the `WorkspaceSettings`
 
