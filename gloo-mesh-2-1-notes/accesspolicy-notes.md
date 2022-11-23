@@ -166,7 +166,7 @@ EOF
 done
 ```
 
-## Appproach 1 enable `serviceIsolation` and selectively import/export resources via `WorkspaceSettings`
+## Appproach 1: Enable `serviceIsolation` and selectively import/export resources via `WorkspaceSettings`
 
 - In this approach, access to a service would be allowed within a Workspace. If there are multiple namespaces within this workspace, access would be allowed by default across those namespaces which is within the `Workspace`.
 - Access to a service would be also allowed from another `Workspace` to which the service was exported to. The other Workspace also needs to write the complimentary `importFrom` spec in `WorkspaceSettings` for this cross Workspace access to work.
@@ -307,7 +307,7 @@ istioctl --context $REMOTE_CONTEXT1 -n bookinfo-backends pc endpoints deploy/htt
 Zero rows returned. No endpoint for `nginx` known
 
 
-## Approach 2 Zero trust with `AccessPolicy` approach test notes
+## Approach 2: Test notes from `AccessPolicy` approach
 
 ### Create the `WorkspaceSettings`
 
