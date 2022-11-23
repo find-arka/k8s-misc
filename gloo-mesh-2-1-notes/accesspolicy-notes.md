@@ -7,7 +7,7 @@ We have tested the following 2 approaches for setting up trust boundaries:
 1. Selectively importing exporting objects via `WorkspaceSettings`, and enabling Workspace level `serviceIsolation`.
 2. Deny all traffic by default and use `AccessPolicy` to explicitly allow traffic selectively.
 
-# Test environment overview
+## Test environment overview
 
 > In our test environment, Workspaces & Namespaces have the same name.
 
