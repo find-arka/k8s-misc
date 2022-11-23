@@ -166,9 +166,9 @@ EOF
 done
 ```
 
-# Appproach 1 - enable `serviceIsolation` and selectively import/export resources via `WorkspaceSettings`
+## Appproach 1enable `serviceIsolation` and selectively import/export resources via `WorkspaceSettings`
 
-## Create the `WorkspaceSettings`
+### Create the `WorkspaceSettings`
 ```
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: admin.gloo.solo.io/v2
@@ -215,7 +215,7 @@ spec:
 EOF
 ```
 
-## Test Access - expect to get 200
+### Test Access - expect to get 200
 
 ```zsh
 kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
@@ -237,7 +237,7 @@ x-envoy-upstream-service-time: 7
 ```
 This matches our expectation.
 
-## Check endpoints
+### Check endpoints
 
 ```zsh
 istioctl --context $REMOTE_CONTEXT1 -n client-namespace pc endpoints deploy/http-client-deployment
@@ -255,9 +255,9 @@ unix://./etc/istio/proxy/XDS                            HEALTHY     OK          
 unix://./var/run/secrets/workload-spiffe-uds/socket     HEALTHY     OK                sds-grpc
 ```
 
-# Zero trust with `AccessPolicy` approach test notes
+## Zero trust with `AccessPolicy` approach test notes
 
-## Create the `WorkspaceSettings`
+### Create the `WorkspaceSettings`
 
 ```zsh
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
@@ -289,7 +289,7 @@ spec:
 EOF
 ```
 
-## setup deny all for these workspaces
+### setup deny all for these workspaces
 ```zsh
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: security.policy.gloo.solo.io/v2
@@ -323,7 +323,7 @@ EOF
 ```
 > These above access polcies currently create Istio `AuthorizationPolicy` with `spec: {}` in respective namespaces.
 
-## Test Access - expect to get 403
+### Test Access - expect to get 403
 
 Attempt curl-ing `nginx` from `http-client`. Should give a 403 since we have the `allow-nothing` AccessPolicy in both the namespaces
 ```zsh
@@ -343,7 +343,7 @@ x-envoy-upstream-service-time: 7
 ```
 This matches our expectation.
 
-## Add allow `AccessPolicy`
+### Add allow `AccessPolicy`
 
 - We would be adding the Access Policy for only `http-client` to talk to `nginx`
 - We would be using `serviceAccountSelector` for this setup.
@@ -391,7 +391,7 @@ spec:
       app: nginx
 ```
 
-## Test Access - expect to get 200
+### Test Access - expect to get 200
 
 ```zsh
 kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
@@ -413,7 +413,7 @@ x-envoy-upstream-service-time: 7
 ```
 This matches our expectation.
 
-## Test that no other apps (with `different serviceaccount`) from `cross workspace` can not talk to nginx
+### Test that no other apps (with `different serviceaccount`) from `cross workspace` can not talk to nginx
 ```zsh
 kubectl apply --context ${REMOTE_CONTEXT1} -f- <<EOF
 apiVersion: v1
@@ -472,7 +472,7 @@ x-envoy-upstream-service-time: 4
 ```
 This matches our expectation.
 
-## Test that other apps (with `differet serviceaccount`) from `same workspace` can not talk to nginx
+### Test that other apps (with `differet serviceaccount`) from `same workspace` can not talk to nginx
 
 ```zsh
 kubectl apply --context ${REMOTE_CONTEXT1} -f- <<EOF
@@ -531,7 +531,7 @@ x-envoy-upstream-service-time: 4
 ```
 This matches our expectation.
 
-## Test that after adding a second `serviceAccountSelector` another app is allowed to talk to nginx
+### Test that after adding a second `serviceAccountSelector` another app is allowed to talk to nginx
 
 > Before making the change in `AccessPolicy`, the exisiting Istio AuthorizationPolicy (generated via existing `AccessPolicy` object) has only one principal:
 `cluster-1-tech-sharing-demo/ns/client-namespace/sa/http-client`
@@ -621,7 +621,7 @@ x-envoy-upstream-service-time: 4
 ```
 This matches our expectation.
 
-## Problem with this approach
+### Problem with this approach
 
 - `istioctl pc endpoints` output shows all the endpoints. Ideally, we would like this to be trimmed down.
 ```zsh
