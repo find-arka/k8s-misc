@@ -1,19 +1,26 @@
-# Zero trust with `AccessPolicy` test notes
+# _"zero-trust"_ test notes
 
-## environment overview
+Please find below the test notes related to _zero-trust_ framework with Gloo Mesh 2.x
 
-> In our test environment, Workspaces & Namespaces have the same name (as requested by end users)
+We have tested the following 2 approaches for setting up trust boundaries:
 
-We have 2 Namespace and 2 Workspace objects
+1. Selectively importing exporting objects via `WorkspaceSettings` based on need, and enabling Workspace level `serviceIsolation`.
+2. Use `AccessPolicy`
+
+# Test environment overview
+
+> In our test environment, Workspaces & Namespaces have the same name.
+
+We have 2 Namespace and 2 corresponding Workspace objects:
 1. client-namespace (`curlimages/curl` is deployed here)
 2. server-namespace (`nginx` is deployed here)
 
-## Create the Namepsaces in all clusters
+## Create the Namepsaces in all workload clusters (where istio is running)
 
-- Management cluster would have the config namespace with the help of `configEnabled: true`. 
-- Workload clusters would have the applications deployed in the namespace.
+- Gloo Mesh Management cluster would have the config namespace with the help of `configEnabled: true`.
+- Workload clusters would have the actual applications deployed in the namespace.
 
-```bash
+```zsh
 for CURRENT_CONTEXT in ${MGMT_CONTEXT} ${REMOTE_CONTEXT1} ${REMOTE_CONTEXT2}
 do
   kubectl --context ${CURRENT_CONTEXT} create namespace client-namespace
@@ -23,7 +30,7 @@ done
 
 ## Add Istio Revision (`istio.io/rev`) label to Namespaces
 
-```bash
+```zsh
 ISTIO_REVISION=1-15
 for CURRENT_CONTEXT in ${REMOTE_CONTEXT1} ${REMOTE_CONTEXT2}
 do
@@ -32,103 +39,8 @@ do
 done
 ```
 
-## Create the Workspaces (client-namespace, server-namespace) in management cluster
-
-```bash
-for NAMESPACE in "client-namespace" "server-namespace"
-do
-kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
-apiVersion: admin.gloo.solo.io/v2
-kind: Workspace
-metadata:
-  name: ${NAMESPACE}
-  namespace: gloo-mesh
-spec:
-  workloadClusters:
-  - name: ${MGMT_CLUSTER}
-    namespaces:
-    - name: ${NAMESPACE}
-    configEnabled: true
-  - name: ${REMOTE_CLUSTER1}
-    namespaces:
-    - name: ${NAMESPACE}
-    configEnabled: false
-  - name: ${REMOTE_CLUSTER2}
-    namespaces:
-    - name: ${NAMESPACE}
-    configEnabled: false
-EOF
-done
-```
-
-## Create the `WorkspaceSettings` for these workspaces
-
-```bash
-kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
-apiVersion: admin.gloo.solo.io/v2
-kind: WorkspaceSettings
-metadata:
-  name: server-namespace
-  namespace: server-namespace
-spec:
-  options:
-  # -- serviceIsolation disabled since we plan to use Access Policies to setup zero trust --
-    serviceIsolation:
-      enabled: false
-      trimProxyConfig: false
-EOF
-
-kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
-apiVersion: admin.gloo.solo.io/v2
-kind: WorkspaceSettings
-metadata:
-  name: client-namespace
-  namespace: client-namespace
-spec:
-  options:
-  # -- serviceIsolation disabled since we plan to use Access Policies to setup zero trust --
-    serviceIsolation:
-      enabled: false
-      trimProxyConfig: false
-EOF
-```
-
-## setup deny all for these workspaces
-```bash
-kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
-apiVersion: security.policy.gloo.solo.io/v2
-kind: AccessPolicy
-metadata:
-  name: allow-nothing
-  namespace: client-namespace
-spec:
-  applyToWorkloads:
-  - {}
-  config:
-    authn:
-      tlsMode: STRICT
-    authz: {}
-EOF
-
-kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
-apiVersion: security.policy.gloo.solo.io/v2
-kind: AccessPolicy
-metadata:
-  name: allow-nothing
-  namespace: server-namespace
-spec:
-  applyToWorkloads:
-  - {}
-  config:
-    authn:
-      tlsMode: STRICT
-    authz: {}
-EOF
-```
-> These above access polcies currently create Istio `AuthorizationPolicy` with `spec: {}` in respective namespaces.
-
 ## Run curl app http-client in `client-namespace` in workload cluster
-```bash
+```zsh
 kubectl apply --context ${REMOTE_CONTEXT1} -f- <<EOF
 apiVersion: v1
 kind: ServiceAccount
@@ -170,7 +82,7 @@ kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
 
 ## Run nginx in `server-namespace` in workload cluster
 
-```bash
+```zsh
 kubectl apply --context ${REMOTE_CONTEXT1} -f- <<EOF
 apiVersion: v1
 kind: ServiceAccount
@@ -225,17 +137,203 @@ kubectl --context ${REMOTE_CONTEXT1} -n server-namespace \
             rollout status deploy/nginx-deployment;
 ```
 
-## Test Access - expect to get 403
+## Create the Workspaces (client-namespace, server-namespace) in management cluster
 
-Attempt curl-ing `nginx` from `http-client`. Should give a 403 since we have the `allow-nothing` AccessPolicy in both the namespaces
-```bash
+```zsh
+for NAMESPACE in "client-namespace" "server-namespace"
+do
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: ${NAMESPACE}
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: ${MGMT_CLUSTER}
+    namespaces:
+    - name: ${NAMESPACE}
+    configEnabled: true
+  - name: ${REMOTE_CLUSTER1}
+    namespaces:
+    - name: ${NAMESPACE}
+    configEnabled: false
+  - name: ${REMOTE_CLUSTER2}
+    namespaces:
+    - name: ${NAMESPACE}
+    configEnabled: false
+EOF
+done
+```
+
+# Appproach 1 - enable `serviceIsolation` and selectively import/export resources via `WorkspaceSettings`
+
+## Create the `WorkspaceSettings`
+```
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: client-namespace
+  namespace: client-namespace
+spec:
+  importFrom:
+# --- client imports only nginx - selects by label ---
+  - workspaces:
+    - name: server-namespace
+    resources:
+    - kind: SERVICE
+      labels:
+        app: nginx
+  options:
+# --- serviceIsolation and trimProxyConfig enabled ---
+    serviceIsolation:
+      enabled: true
+      trimProxyConfig: true
+EOF
+
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: server-namespace
+  namespace: server-namespace
+spec:
+  exportTo:
+# --- export only nginx service to client-namespace ---
+  - workspaces:
+    - name: client-namespace
+    resources:
+    - kind: SERVICE
+      labels:
+        app: nginx
+  options:
+# --- serviceIsolation and trimProxyConfig enabled ---
+    serviceIsolation:
+      enabled: true
+      trimProxyConfig: true
+EOF
+```
+
+## Test Access - expect to get 200
+
+```zsh
 kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
   exec -it deployments/http-client-deployment \
   -- curl -I nginx.server-namespace.svc.cluster.local
 ```
 
 Output:
-```bash
+```zsh
+HTTP/1.1 200 OK
+server: envoy
+date: Wed, 23 Nov 2022 18:53:31 GMT
+content-type: text/html
+content-length: 612
+last-modified: Tue, 04 Dec 2018 14:44:49 GMT
+etag: "5c0692e1-264"
+accept-ranges: bytes
+x-envoy-upstream-service-time: 7
+```
+This matches our expectation.
+
+## Check endpoints
+
+```zsh
+istioctl --context $REMOTE_CONTEXT1 -n client-namespace pc endpoints deploy/http-client-deployment
+```
+
+```zsh
+ENDPOINT                                                STATUS      OUTLIER CHECK     CLUSTER
+10.0.0.30:80                                            HEALTHY     OK                outbound|80||http-client.client-namespace.svc.cluster.local
+10.0.1.51:80                                            HEALTHY     OK                outbound|80||nginx.server-namespace.svc.cluster.local
+127.0.0.1:15000                                         HEALTHY     OK                prometheus_stats
+127.0.0.1:15020                                         HEALTHY     OK                agent
+172.20.62.76:9977                                       HEALTHY     OK                envoy_accesslog_service
+172.20.62.76:9977                                       HEALTHY     OK                envoy_metrics_service
+unix://./etc/istio/proxy/XDS                            HEALTHY     OK                xds-grpc
+unix://./var/run/secrets/workload-spiffe-uds/socket     HEALTHY     OK                sds-grpc
+```
+
+# Zero trust with `AccessPolicy` approach test notes
+
+## Create the `WorkspaceSettings`
+
+```zsh
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: server-namespace
+  namespace: server-namespace
+spec:
+  options:
+  # -- serviceIsolation disabled since we plan to use Access Policies to setup zero trust --
+    serviceIsolation:
+      enabled: false
+      trimProxyConfig: false
+EOF
+
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: client-namespace
+  namespace: client-namespace
+spec:
+  options:
+  # -- serviceIsolation disabled since we plan to use Access Policies to setup zero trust --
+    serviceIsolation:
+      enabled: false
+      trimProxyConfig: false
+EOF
+```
+
+## setup deny all for these workspaces
+```zsh
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: security.policy.gloo.solo.io/v2
+kind: AccessPolicy
+metadata:
+  name: allow-nothing
+  namespace: client-namespace
+spec:
+  applyToWorkloads:
+  - {}
+  config:
+    authn:
+      tlsMode: STRICT
+    authz: {}
+EOF
+
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: security.policy.gloo.solo.io/v2
+kind: AccessPolicy
+metadata:
+  name: allow-nothing
+  namespace: server-namespace
+spec:
+  applyToWorkloads:
+  - {}
+  config:
+    authn:
+      tlsMode: STRICT
+    authz: {}
+EOF
+```
+> These above access polcies currently create Istio `AuthorizationPolicy` with `spec: {}` in respective namespaces.
+
+## Test Access - expect to get 403
+
+Attempt curl-ing `nginx` from `http-client`. Should give a 403 since we have the `allow-nothing` AccessPolicy in both the namespaces
+```zsh
+kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
+  exec -it deployments/http-client-deployment \
+  -- curl -I nginx.server-namespace.svc.cluster.local
+```
+
+Output:
+```zsh
 HTTP/1.1 403 Forbidden
 content-length: 19
 content-type: text/plain
@@ -252,7 +350,7 @@ This matches our expectation.
 - We would be using `applyToWorkloads` in `AccessPolicy.spec`. As per [docs here](https://docs.solo.io/gloo-mesh-enterprise/latest/reference/api/github.com.solo-io.gloo-mesh-enterprise.api.gloo.solo.io.policy.v2.security.access_policy/#security.policy.gloo.solo.io.AccessPolicySpec) this is recommended over `applyToDestinations`
 - Select `allowedClients` by `serviceAccountSelector`. `ServiceAccount` name, `Cluster` name, `Namespace` name is used to make the selection.
 
-```bash
+```zsh
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: security.policy.gloo.solo.io/v2
 kind: AccessPolicy
@@ -280,7 +378,7 @@ EOF
 ```
 
 - This creates an Istio `AuthorizationPolicy` with desired spec-
-```bash
+```zsh
 ...
 spec:
   rules:
@@ -295,14 +393,14 @@ spec:
 
 ## Test Access - expect to get 200
 
-```bash
+```zsh
 kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
   exec -it deployments/http-client-deployment \
   -- curl -I nginx.server-namespace.svc.cluster.local
 ```
 
 Output:
-```bash
+```zsh
 HTTP/1.1 200 OK
 server: envoy
 date: Tue, 22 Nov 2022 17:51:00 GMT
@@ -316,7 +414,7 @@ x-envoy-upstream-service-time: 7
 This matches our expectation.
 
 ## Test that no other apps (with `different serviceaccount`) from `cross workspace` can not talk to nginx
-```bash
+```zsh
 kubectl apply --context ${REMOTE_CONTEXT1} -f- <<EOF
 apiVersion: v1
 kind: ServiceAccount
@@ -357,14 +455,14 @@ kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
 
 ### Test Access - expect to get 403
 
-```bash
+```zsh
 kubectl --context ${REMOTE_CONTEXT1} -n client-namespace \
   exec -it deployments/http-client-2-deployment \
   -- curl -I nginx.server-namespace.svc.cluster.local
 ```
 
 Output:
-```bash
+```zsh
 HTTP/1.1 403 Forbidden
 content-length: 19
 content-type: text/plain
@@ -376,7 +474,7 @@ This matches our expectation.
 
 ## Test that other apps (with `differet serviceaccount`) from `same workspace` can not talk to nginx
 
-```bash
+```zsh
 kubectl apply --context ${REMOTE_CONTEXT1} -f- <<EOF
 apiVersion: v1
 kind: ServiceAccount
@@ -417,13 +515,13 @@ kubectl --context ${REMOTE_CONTEXT1} -n server-namespace \
 ```
 
 ### Test Access - expect to get 403
-```bash
+```zsh
 kubectl --context ${REMOTE_CONTEXT1} -n server-namespace \
   exec -it deployments/http-client-server-namespace-deployment \
   -- curl -I nginx.server-namespace.svc.cluster.local
 ```
 
-```bash
+```zsh
 HTTP/1.1 403 Forbidden
 content-length: 19
 content-type: text/plain
@@ -451,7 +549,7 @@ spec:
 ```
 
 - Adding 2nd `serviceAccountSelector` to the `AccessPolicy`. Select by `ServiceAccount` name, `Cluster` name, `Namespace` name.
-```bash
+```zsh
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: security.policy.gloo.solo.io/v2
 kind: AccessPolicy
@@ -483,7 +581,9 @@ spec:
 # ------------------------------------------------------------
 EOF
 ```
-As a result, new rules get added to the Istio `AuthorizationPolicy`
+
+> As a result, new `rules` get added to the Istio `AuthorizationPolicy`:
+
 ```yaml
 spec:
   rules:
@@ -501,14 +601,14 @@ spec:
 
 ### Test Access - expect to get 200
 
-```bash
+```zsh
 kubectl --context ${REMOTE_CONTEXT1} -n server-namespace \
   exec -it deployments/http-client-server-namespace-deployment \
   -- curl -I nginx.server-namespace.svc.cluster.local
 ```
 
 Output:
-```bash
+```zsh
 HTTP/1.1 200 OK
 server: envoy
 date: Tue, 22 Nov 2022 18:09:59 GMT
@@ -523,8 +623,8 @@ This matches our expectation.
 
 ## Problem with this approach
 
-- `istioctl pc endpoints` output shows all the endpoints. Ideally, we would like this to be trimmed.
-```bash
+- `istioctl pc endpoints` output shows all the endpoints. Ideally, we would like this to be trimmed down.
+```zsh
 istioctl --context $REMOTE_CONTEXT1 -n client-namespace pc endpoints deploy/http-client-deployment
 ```
 ```zsh
@@ -566,10 +666,12 @@ unix://./etc/istio/proxy/XDS                            HEALTHY     OK          
 unix://./var/run/secrets/workload-spiffe-uds/socket     HEALTHY     OK                sds-grpc
 ```
 - To use `AccessPolicy` and define which services are allowed to interact with which services we have to first disable `serviceIsolation` in the WorkspaceSettings object-
-```
+
+```yaml
     serviceIsolation:
       enabled: false
 ```
+
 - `trimProxyConfig` is currently tied to `serviceIsolation` and if `serviceIsolation` is disabled, trimProxyConfig is disabled as well. Thus, we are seeing all the entries in the `istioctl pc endpoints`.
 
-> There is a github issue open on this subject so that `trimProxyConfig` could be separated from  `serviceIsolation` logic.
+> There is a github issue currently open on this subject so that `trimProxyConfig` could be separated from `serviceIsolation` logic.
