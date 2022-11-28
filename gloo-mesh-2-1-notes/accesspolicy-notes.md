@@ -1,13 +1,17 @@
 # Notes from _"zero-trust"_ testing
 
-Contains the test notes related to _zero-trust_ with Gloo Mesh 2.x
-
-We have tested the following 2 approaches for setting up trust boundaries:
+Contains the test notes related to _zero-trust_ with Gloo Mesh 2.x. We have tested the following 2 approaches for setting up trust boundaries:
 
 1. Selectively importing exporting objects via `WorkspaceSettings`, and enabling Workspace level `serviceIsolation`.
 2. Deny all traffic by default and use `AccessPolicy` to explicitly allow traffic selectively.
 
-## Test environment overview
+## Table of Content
+
+- [Test Environment Overview](#environment)
+- [Appproach 1 - `WorkspaceSettings` with selective import/export](#approach-1)
+- [Appproach 2 - Using `AccessPolicy`](#approach-2)
+
+# Test environment overview <a name="environment"></a>
 
 > In our test environment, Workspaces & Namespaces have the same name.
 
@@ -166,9 +170,12 @@ EOF
 done
 ```
 
-## Appproach 1: Enable `serviceIsolation` and selectively import/export resources via `WorkspaceSettings`
+# Appproach 1: `WorkspaceSettings` with selective import/export  <a name="approach-1"></a>
+
+> Enable `serviceIsolation` and selectively import/export resources via `WorkspaceSettings`
 
 - In this approach, access to a service would be allowed within a Workspace. If there are multiple namespaces within this workspace, access would be allowed by default across those namespaces which is within the `Workspace`.
+
 - Access to a service would be also allowed from another `Workspace` to which the service was exported to. The other Workspace also needs to write the complimentary `importFrom` spec in `WorkspaceSettings` for this cross Workspace access to work.
 
 ### Create the `WorkspaceSettings`
@@ -307,7 +314,7 @@ istioctl --context $REMOTE_CONTEXT1 -n bookinfo-backends pc endpoints deploy/htt
 Zero rows returned. No endpoint for `nginx` known
 
 
-## Approach 2: Test notes from `AccessPolicy` approach
+# Approach 2: Using `AccessPolicy` <a name="approach-2"></a>
 
 ### Create the `WorkspaceSettings`
 
