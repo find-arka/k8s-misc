@@ -155,6 +155,7 @@ EOF
 
 ## Test the route
 ```bash
+export ENDPOINT_HTTP_GW_CLUSTER1=$(kubectl --context ${CLUSTER1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):80
 echo "http://${ENDPOINT_HTTP_GW_CLUSTER1}"
 ```
 ![Graph](images/simple-app-access-via-ingress.png)
