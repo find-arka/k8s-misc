@@ -665,33 +665,3 @@ curl -Iv http://www.google.com
 ^ Received 200 response
 
 We were also able to exec into a pod outside the workspace and we were not able to reach by curl `curl -Iv http://www.google.com` since the REGISTRY_ONLY mode was set in Istio
-
-
-## Pairing notes - Creating `ServiceEntry` directly
-
-```
-kubectl apply --context ${REMOTE_CONTEXT1} -f- <<EOF
-apiVersion: networking.istio.io/v1beta1
-kind: ServiceEntry
-metadata:
-  name: temp-test-nginx
-  namespace: bookinfo-backends
-spec:
-  addresses:
-    - "10.0.0.229"
-  exportTo:
-    - .
-  hosts:
-    - "10.0.0.229"
-  ports:
-  - name: http
-    number: 80
-    protocol: HTTP
-  resolution: STATIC
-EOF
-```
-
-Error -
-```
-Error from server: error when creating "STDIN": admission webhook "validation.istio.io" denied the request: configuration is invalid: domain name "0.0.229" invalid (top level domain "229" cannot be all-numeric)
-```
