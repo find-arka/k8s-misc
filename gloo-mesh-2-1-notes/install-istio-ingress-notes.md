@@ -9,9 +9,10 @@ curl -L https://istio.io/downloadIstio | sh -
 
 #### `HUB` for the Istio Version
 
-[docs](https://support.solo.io/hc/en-us/articles/4414409064596)
+[Docs link](https://support.solo.io/hc/en-us/articles/4414409064596)
+
 ```bash
-export HUB="<Please update based on above URL>"
+export HUB="<Please update based on above Docs link>"
 export INGRESS_GATEWAY_NAME="istio-ingressgateway-new"
 ```
 
