@@ -261,7 +261,7 @@ metadata:
   namespace: backend-config
 spec:
   hosts:
-  - 'reviews.backend-config.solo-io.mesh'
+  - 'reviews.global'
   services:
   - labels:
       app: reviews
@@ -275,11 +275,11 @@ EOF
 ```bash
 kubectl --context ${REMOTE_CONTEXT1} -n bookinfo-frontends \
     set env deploy/productpage-v1 \
-    REVIEWS_HOSTNAME="reviews.backend-config.solo-io.mesh"
+    REVIEWS_HOSTNAME="reviews.global"
 
 kubectl --context ${REMOTE_CONTEXT2} -n bookinfo-frontends \
     set env deploy/productpage-v1 \
-    REVIEWS_HOSTNAME="reviews.backend-config.solo-io.mesh"
+    REVIEWS_HOSTNAME="reviews.global"
 ```
 
 ## Verify
@@ -295,8 +295,59 @@ kubectl --context ${REMOTE_CONTEXT2} -n istio-gateways logs -f deploy/istio-east
 ```
 
 ```bash
-[2022-11-03T18:22:51.440Z] "- - -" 0 - - - "-" 12184 17251 59279 - "-" "-" "-" "-" "172.16.0.60:9080" outbound_.9080_._.reviews.backend-config.solo-io.mesh 172.16.1.139:40738 172.16.1.139:15443 172.16.0.74:64843 outbound_.9080_._.reviews.backend-config.solo-io.mesh -
-[2022-11-03T18:22:57.722Z] "- - -" 0 - - - "-" 12184 17257 59959 - "-" "-" "-" "-" "172.16.1.182:9080" outbound_.9080_._.reviews.backend-config.solo-io.mesh 172.16.1.139:36108 172.16.1.139:15443 172.16.1.203:49383 outbound_.9080_._.reviews.backend-config.solo-io.mesh -
+[2022-11-03T18:22:51.440Z] "- - -" 0 - - - "-" 12184 17251 59279 - "-" "-" "-" "-" "172.16.0.60:9080" outbound_.9080_._.reviews.global 172.16.1.139:40738 172.16.1.139:15443 172.16.0.74:64843 outbound_.9080_._.reviews.global -
+[2022-11-03T18:22:57.722Z] "- - -" 0 - - - "-" 12184 17257 59959 - "-" "-" "-" "-" "172.16.1.182:9080" outbound_.9080_._.reviews.global 172.16.1.139:36108 172.16.1.139:15443 172.16.1.203:49383 outbound_.9080_._.reviews.global -
+```
+### Weight based routing notes
+```bash
+cat << EOF | kubectl --context ${MGMT_CONTEXT} apply -f -
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: reviews
+  namespace: backend-config
+spec:
+  hosts:
+    - 'reviews.global'
+  http:
+    # Route for the reviews service
+    - name: reviews
+      # Prefix matching
+      matchers:
+      - uri:
+          prefix: /
+      # Forwarding directive
+      forwardTo:
+        destinations:
+          - kind: VIRTUAL_DESTINATION
+            ref:
+              name: reviews
+              namespace: backend-config
+              cluster: ${MGMT_CONTEXT}
+            subset:
+              version: v1
+            port:
+              number: 9080
+            weight: 100
+          - kind: VIRTUAL_DESTINATION
+            ref:
+              name: reviews
+              namespace: backend-config
+              cluster: ${MGMT_CONTEXT}
+            subset:
+              version: v3
+            port:
+              number: 9080
+            weight: 0
+EOF
+```
+
+#### verify
+```bash
+for i in {1..20}
+do
+   curl -s http://${ENDPOINT_HTTP_GW_CLUSTER1}/productpage | grep "reviews-"
+done
 ```
 # Access on HTTPS endpoint
 
