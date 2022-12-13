@@ -9,7 +9,7 @@ Contains the test notes related to _zero-trust_ with Gloo Mesh 2.x. We have test
 
 - [Test Environment Overview](#environment)
 - [Appproach 1 - `WorkspaceSettings` with selective import/export](#approach-1)
-- [Appproach 2 - Using `AccessPolicy`](#approach-2)
+- [Appproach 2 - Using **_allow-nothing_** `AccessPolicy` in each Workspace](#approach-2)
 
 # Test environment overview <a name="environment"></a>
 
