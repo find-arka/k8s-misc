@@ -1,5 +1,5 @@
 #!/bin/bash
-# https://docs.solo.io/gloo-mesh-enterprise/latest/setup/installation/istio/gm_managed_istio/gloo_mesh_managed/
+# https://docs.solo.io/gloo-mesh-enterprise/latest/setup/installation/istio/gm_managed_istio/gloo_mesh_managed/#ilcm-openshift
 export MGMT=drew-ocp-cluster3
 export CLUSTER1=drew-ocp-cluster1
 export CLUSTER2=drew-ocp-cluster2
