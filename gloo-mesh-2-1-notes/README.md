@@ -642,7 +642,7 @@ Run sample `busyboxplus` pod to test access
 ```bash
 kubectl -n bookinfo-backends run curl-busybox --image=radial/busyboxplus:curl -i --tty
 ```
-
+### Using ExternalEndpoint & ExternalService combination
 ExternalEndpoint config to access nginx running in an EC2 instance
 ```bash
 kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
@@ -686,6 +686,46 @@ spec:
     external-endpoint: nginx
 EOF
 ```
+
+### Using ExternalService
+
+#### Directly access via IP address
+
+```bash
+kubectl apply -f- <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: ExternalService
+metadata:
+  name: nginx-ext-svc
+  namespace: backend-config
+spec:
+  addresses:
+# ---- IP of nginx server running in an EC2 ----
+  - "10.0.0.229"
+  ports:
+  - name: http
+    number: 80
+    protocol: HTTP
+EOF
+```
+verify:
+```
+curl -I 10.0.0.229
+```
+
+```
+HTTP/1.1 200 OK
+server: envoy
+date: Tue, 20 Dec 2022 20:33:00 GMT
+content-type: text/html
+content-length: 615
+last-modified: Wed, 05 Oct 2022 16:37:48 GMT
+etag: "633db2dc-267"
+accept-ranges: bytes
+x-envoy-upstream-service-time: 2
+```
+
+#### Directly access via a hostname
 
 Created an ExternalService in the Management cluster, in the config namespace for www.google.com.
 ```bash
