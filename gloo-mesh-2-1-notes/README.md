@@ -692,7 +692,7 @@ EOF
 #### Directly access via IP address
 
 ```bash
-kubectl apply -f- <<EOF
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: ExternalService
 metadata:
