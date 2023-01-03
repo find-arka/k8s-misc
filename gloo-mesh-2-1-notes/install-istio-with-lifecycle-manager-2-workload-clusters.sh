@@ -31,7 +31,7 @@ done
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # https://support.solo.io/hc/en-us/articles/4414409064596
 # istio-1.15
-export REPO="us-docker.pkg.dev/gloo-mesh/istio-1cf99a48c9d8" 
+export REPO="IN THE SUPPORT LINK" 
 export ISTIO_IMAGE=1.15.3-solo
 export REVISION=1-15
 
