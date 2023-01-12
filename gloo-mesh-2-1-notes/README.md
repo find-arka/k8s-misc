@@ -756,3 +756,162 @@ curl -Iv http://www.google.com
 ^ Received 200 response
 
 We were also able to exec into a pod outside the workspace and we were not able to reach by curl `curl -Iv http://www.google.com` since the REGISTRY_ONLY mode was set in Istio
+
+
+## Weighted routing with subsets and VirtualDestination
+
+### Deploy productpage v2 in cluster 2
+
+```bash
+kubectl -n bookinfo-frontends --context ${REMOTE_CONTEXT2} apply -f - <<EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: productpage-v2
+  labels:
+    app: productpage
+    version: v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: productpage
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: productpage
+        version: v2
+    spec:
+      serviceAccountName: bookinfo-productpage
+      containers:
+      - name: productpage
+        image: docker.io/istio/examples-bookinfo-productpage-v1:1.17.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9080
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        securityContext:
+          runAsUser: 1000
+      volumes:
+      - name: tmp
+        emptyDir: {}
+EOF
+```
+
+- Edit the env vars so that the above product page version can interact with the already running reviews and details services
+```bash
+kubectl --context ${REMOTE_CONTEXT2} -n bookinfo-frontends \
+  set env deploy/productpage-v2 \
+  REVIEWS_HOSTNAME="reviews.global";
+
+kubectl --context "${REMOTE_CONTEXT2}" -n bookinfo-frontends \
+  set env deploy/productpage-v2 \
+  DETAILS_HOSTNAME="details.bookinfo-backends.svc.cluster.local";
+```
+
+- Create the productpage VirtualDestination
+```bash
+kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: productpage
+  namespace: frontend-config
+spec:
+  hosts:
+  - productpage.global
+  services:
+  - namespace: bookinfo-frontends
+    labels:
+      app: productpage
+  ports:
+    - number: 9080
+      protocol: HTTP
+EOF
+```
+
+- Create the productpage Routetable and defined weighted routing
+```bash
+kubectl --context ${MGMT_CONTEXT} apply -f - <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: productpage
+  namespace: frontend-config
+spec:
+  hosts:
+    - '*'
+  virtualGateways:
+    - name: north-south-gw
+      namespace: platform-config
+      cluster: ${MGMT_CONTEXT}
+  workloadSelectors: []
+  http:
+    - name: productpage
+      matchers:
+      - uri:
+          exact: /productpage
+      - uri:
+          prefix: /static
+      - uri:
+          exact: /login
+      - uri:
+          exact: /logout
+      - uri:
+          prefix: /api/v1/products
+      forwardTo:
+        destinations:
+          - kind: VIRTUAL_DESTINATION
+            ref:
+              name: productpage
+              namespace: frontend-config
+            port:
+              number: 9080
+            subset:
+              version: v1
+            weight: 50
+          - kind: VIRTUAL_DESTINATION
+            ref:
+              name: productpage
+              namespace: frontend-config
+            port:
+              number: 9080
+            subset:
+              version: v2
+            weight: 50
+EOF
+```
+
+- Follow logs of productpage v2
+```bash
+kubectl --context ${REMOTE_CONTEXT2} -n bookinfo-frontends \
+  logs -f deploy/productpage-v2;
+```
+
+- Follow logs of productpage v1
+```bash
+kubectl --context ${REMOTE_CONTEXT1} -n bookinfo-frontends \
+  logs -f deploy/productpage-v1;
+```
+
+```bash
+kubectl --context ${REMOTE_CONTEXT2} -n bookinfo-frontends \
+  logs -f deploy/productpage-v1;
+```
+
+- Attempt curl
+```bash
+export ENDPOINT_HTTP_GW_CLUSTER1=$(kubectl --context ${REMOTE_CONTEXT1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):80
+
+echo; echo "Productpage link: http://${ENDPOINT_HTTP_GW_CLUSTER1}/productpage"
+
+for i in {1..20}
+do
+  echo; echo "Attempt ${i}:";
+  OUTPUT=$(curl -s "http://${ENDPOINT_HTTP_GW_CLUSTER1}/productpage" | grep -A3 "reviews-")
+  echo; echo $OUTPUT
+done
+```
