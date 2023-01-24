@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 # Docs: https://docs.solo.io/gloo-mesh-enterprise/main/observability/tools/prometheus/setup/
-export UPGRADE_VERSION=2.2.0-rc3
+export UPGRADE_VERSION=2.2.0
 helm repo update
 helm search repo gloo-mesh-enterprise --versions --devel | grep "${UPGRADE_VERSION}"
 
