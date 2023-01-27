@@ -136,3 +136,57 @@ do
     echo; echo "[INFO] Occurence of ${METRIC}: ${OUTPUT}"
 done
 kill $PID
+
+
+## Test notes from setting up metrics pipeline when we have custom certificate
+
+- Create a Certficate object for the metrics gateway in the management cluster
+
+kind: Certificate
+apiVersion: cert-manager.io/v1
+metadata:
+  name: gloo-metrics-gateway
+  namespace: gloo-mesh
+spec:
+  secretName: gloo-metrics-gateway-tls-secret
+  duration: 2h
+  issuerRef:
+# ---------------- Issuer for Gloo Mesh certs ---------------------------
+    group: awspca.cert-manager.io
+    kind: AWSPCAClusterIssuer
+    name: aws-pca-cluster-issuer-gloo-mesh-$MGMT_CONTEXT
+# ---------------- Issuer for Gloo Mesh certs ---------------------------
+  commonName: gloo-metrics-gateway
+  dnsNames:
+    - gloo-metrics-gateway.gloo-mesh
+    - gloo-metrics-gateway.gloo-mesh.svc
+  usages:
+    - server auth
+    - client auth
+    - digital signature
+    - key encipherment
+  privateKey:
+    algorithm: "RSA"
+    size: 2048
+
+
+- This would create the prerequisite gloo-metrics-gateway-tls-secret
+
+- Run the helm upgrade with the following override:
+
+--set metricsgatewayCustomization.disableCertGeneration=true
+
+## Workload cluster steps:
+
+- following is a workaround. we have a github issue to perform this more gracefully:
+
+# get the root CA cert
+RELAY_ROOT_TLS_SECRET_CA_CERT=$(kubectl --context ${REMOTE_CONTEXT1} -n gloo-mesh get secret relay-client-tls-secret -o yaml | yq '.data."ca.crt"' | base64 -d)
+
+# cluster 1
+kubectl --context ${REMOTE_CONTEXT1} -n gloo-mesh create secret generic relay-root-tls-secret --from-literal="ca.crt"=${RELAY_ROOT_TLS_SECRET_CA_CERT}
+
+# cluster 2
+kubectl --context ${REMOTE_CONTEXT2} -n gloo-mesh create secret generic relay-root-tls-secret --from-literal="ca.crt"=${RELAY_ROOT_TLS_SECRET_CA_CERT}
+
+
