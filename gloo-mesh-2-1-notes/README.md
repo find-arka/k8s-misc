@@ -556,128 +556,6 @@ spec:
 EOF
 ```
 
-## ExternalService 
-
-Run sample `busyboxplus` pod to test access
-```bash
-kubectl -n bookinfo-backends run curl-busybox --image=radial/busyboxplus:curl -i --tty
-```
-### Using ExternalEndpoint & ExternalService combination
-ExternalEndpoint config to access nginx running in an EC2 instance
-```bash
-kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
-apiVersion: networking.gloo.solo.io/v2
-kind: ExternalEndpoint
-metadata:
-  name: nginx-external-endpoint
-  namespace: backend-config
-  labels:
-    # Label that the external service will select
-    external-endpoint: nginx
-spec:
-  # IP on EC2 where nginx is running
-  address: 10.0.0.229
-  ports:
-    - name: http
-      number: 80
-EOF
-```
-
-Create ExternalService and use the above endpoint
-```bash
-kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
-apiVersion: networking.gloo.solo.io/v2
-kind: ExternalService
-metadata:
-  name: nginx-external-service
-  namespace: backend-config
-spec:
-  hosts:
-  # Arbitrary, internal-only hostname assigned to the endpoint
-  - "my-remote-nginx.com"
-  ports:
-  - name: http
-    number: 80
-    protocol: HTTP
-    targetPort:
-      number: 80
-  selector:
-    # Selects the ExternalEndpoint by label
-    external-endpoint: nginx
-EOF
-```
-
-### Using ExternalService
-
-#### Directly access via IP address
-
-```bash
-kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
-apiVersion: networking.gloo.solo.io/v2
-kind: ExternalService
-metadata:
-  name: nginx-ext-svc
-  namespace: backend-config
-spec:
-  addresses:
-# ---- IP of nginx server running in an EC2 ----
-  - "10.0.0.229"
-  ports:
-  - name: http
-    number: 80
-    protocol: HTTP
-EOF
-```
-verify:
-```
-curl -I 10.0.0.229
-```
-
-```
-HTTP/1.1 200 OK
-server: envoy
-date: Tue, 20 Dec 2022 20:33:00 GMT
-content-type: text/html
-content-length: 615
-last-modified: Wed, 05 Oct 2022 16:37:48 GMT
-etag: "633db2dc-267"
-accept-ranges: bytes
-x-envoy-upstream-service-time: 2
-```
-
-#### Directly access via a hostname
-
-Created an ExternalService in the Management cluster, in the config namespace for www.google.com.
-```bash
-kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
-apiVersion: networking.gloo.solo.io/v2
-kind: ExternalService
-metadata:
-  name: google-ext-svc
-  namespace: backend-config
-spec:
-  hosts:
-  - www.google.com
-  ports:
-  - name: http
-    number: 80
-    protocol: HTTP
-EOF
-```
-This created the desired ServiceEntry object in the workload cluster.
-
-We were able to exec into a pod in the workspace where the `ExternalService` was deployed and successfully curl www.google.com.
-```
-kubectl -n backend-config run curl-busybox --image=radial/busyboxplus:curl -i --tty
-```
-```
-curl -Iv http://www.google.com
-```
-^ Received 200 response
-
-We were also able to exec into a pod outside the workspace and we were not able to reach by curl `curl -Iv http://www.google.com` since the REGISTRY_ONLY mode was set in Istio
-
-
 ## Weighted routing with subsets and VirtualDestination
 
 ### Deploy productpage v2 in cluster 2
@@ -923,4 +801,423 @@ do
   OUTPUT=$(curl -s "http://${ENDPOINT_HTTP_GW_CLUSTER1}/productpage" | grep -A3 "reviews-")
   echo $OUTPUT
 done
+```
+
+# External service access via CIDR and IP test notes
+#### create a NameSpace in the workload cluster and add `istio.io/rev` label:
+```bash
+kubectl --context="${REMOTE_CONTEXT1}" create ns bookinfo;
+kubectl --context="${REMOTE_CONTEXT1}" label namespace bookinfo "istio.io/rev"="1-15"
+```
+#### create the config NameSpace in the management cluster
+```bash
+kubectl --context="${MGMT_CONTEXT}" create ns bookinfo-config;
+````
+
+#### deploy sleep pod in workload cluster
+```bash
+cat << EOF | kubectl -n bookinfo --context=${REMOTE_CONTEXT1} apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sleep
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sleep
+  labels:
+    app: sleep
+    service: sleep
+spec:
+  ports:
+  - port: 80
+    name: http
+  selector:
+    app: sleep
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sleep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sleep
+  template:
+    metadata:
+      labels:
+        app: sleep
+    spec:
+      serviceAccountName: sleep
+      containers:
+      - name: sleep
+        image: governmentpaas/curl-ssl:terraform-14
+        command: ["/bin/sleep", "3650d"]
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - mountPath: /etc/sleep/tls
+          name: secret-volume
+      volumes:
+      - name: secret-volume
+        secret:
+          secretName: sleep-secret
+          optional: true
+EOF
+```
+
+#### test that external svc access is NOT working by default, due to `REGISTRY_ONLY` outbound traffic policy
+
+Attempting to access https://httpbin.org by it's IP address.
+
+```bash
+for IP in $(dig +short httpbin.org); do
+  kubectl --context=${REMOTE_CONTEXT1} -n bookinfo exec -ti deploy/sleep -c sleep -- curl -ik https://$IP/get
+done
+```
+
+Output:
+```bash
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 52.1.93.201:443
+command terminated with exit code 35
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 34.205.150.168:443
+command terminated with exit code 35
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 52.200.117.68:443
+command terminated with exit code 35
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 34.224.50.110:443
+command terminated with exit code 35
+```
+
+##### create the `Workspace`, `WorkspaceSettings` in management cluster
+
+```bash
+kubectl --context="${MGMT_CONTEXT}" apply -f- <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: bookinfo
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: "${MGMT_CONTEXT}"
+    namespaces:
+    - name: bookinfo-config
+    configEnabled: true
+  - name: "${REMOTE_CONTEXT1}"
+    namespaces:
+    - name: bookinfo
+    configEnabled: false
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: bookinfo
+  namespace: bookinfo-config
+spec:
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+    federation:
+      enabled: false
+    serviceIsolation:
+      enabled: true
+      trimProxyConfig: true
+EOF
+```
+
+#### Test that ext svc access is STILL not working
+
+```bash
+for IP in $(dig +short httpbin.org); do
+  kubectl --context=${REMOTE_CONTEXT1} -n bookinfo exec -ti deploy/sleep -c sleep -- curl -ik https://$IP/get
+done
+```
+
+Output:
+```bash
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 52.1.93.201:443
+command terminated with exit code 35
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 34.224.50.110:443
+command terminated with exit code 35
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 52.200.117.68:443
+command terminated with exit code 35
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 34.205.150.168:443
+command terminated with exit code 35
+```
+
+## create the `ExternalService` with CIDR
+
+- Check the CIDR for httpbin.org
+
+```bash
+dig +short httpbin.org
+```
+```bash
+34.224.50.110
+34.205.150.168
+52.200.117.68
+52.1.93.201
+```
+
+- CIDR of httpbin.org for this test
+```bash
+  - 34.0.0.0/8
+  - 52.0.0.0/8
+```
+
+```bash
+kubectl --context=${MGMT_CONTEXT} apply -f- <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: ExternalService
+metadata:
+  name: httpbin-ext-svc
+  namespace: bookinfo-config
+spec:
+  addresses:
+# --- CIDR for httpbin --- 
+  - 34.0.0.0/8
+  - 52.0.0.0/8
+# --- CIDR for httpbin --- 
+  ports:
+# --- TCP 443 for HTTPS --- 
+  - name: tcp
+    number: 443
+    protocol: TCP
+# --- TCP 443 for HTTPS --- 
+EOF
+```
+
+- This creates the `ServiceEntry` object in the workload cluster.
+
+### Test that access is now working
+```bash
+for IP in $(dig +short httpbin.org); do
+  kubectl --context=${REMOTE_CONTEXT1} -n bookinfo exec -ti deploy/sleep -c sleep -- curl -ik https://$IP/get
+done
+```
+
+```bash
+HTTP/2 200
+date: Wed, 01 Feb 2023 16:34:56 GMT
+content-type: application/json
+content-length: 259
+server: gunicorn/19.9.0
+access-control-allow-origin: *
+access-control-allow-credentials: true
+.
+.
+.
+```
+
+#### Delete the `ExternalService` and re-test. It shouldn't work anymore
+
+```bash
+kubectl --context=${MGMT_CONTEXT} -n bookinfo-config delete externalservice httpbin-ext-svc
+```
+
+```bash
+for IP in $(dig +short httpbin.org); do
+  kubectl --context=${REMOTE_CONTEXT1} -n bookinfo exec -ti deploy/sleep -c sleep -- curl -ik https://$IP/get
+done
+```
+
+Output
+```bash
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 52.200.117.68:443
+command terminated with exit code 35
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 34.224.50.110:443
+command terminated with exit code 35
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 52.1.93.201:443
+command terminated with exit code 35
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 34.205.150.168:443
+command terminated with exit code 35
+```
+
+## create the `ExternalService` with IP address
+
+> pre-req: We ran nginx on an EC2 and the public IP was `3.22.233.162`
+
+```bash
+export NGINX_IP="3.22.233.162"
+```
+### By default access shouldn't work due to REGISTRY_ONLY config
+
+```bash
+kubectl --context=${REMOTE_CONTEXT1} -n bookinfo exec -ti deploy/sleep -c sleep -- curl -ik http://$NGINX_IP
+```
+
+```bash
+Output:
+HTTP/1.1 502 Bad Gateway
+date: Wed, 01 Feb 2023 16:39:03 GMT
+server: envoy
+content-length: 0
+```
+
+#### ExternalService on HTTP endpoint
+```bash
+kubectl --context=${MGMT_CONTEXT} apply -f- <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: ExternalService
+metadata:
+  name: nginx-ec2-ext-svc
+  namespace: bookinfo-config
+spec:
+  addresses:
+  - "${NGINX_IP}"
+  ports:
+  - name: tcp
+    number: 80
+    protocol: TCP
+EOF
+```
+
+### Verify access. Expected to work now
+
+```bash
+kubectl --context=${REMOTE_CONTEXT1} -n bookinfo exec -ti deploy/sleep -c sleep -- curl -i http://$NGINX_IP
+```
+
+#### Output
+
+```bash
+HTTP/1.1 200 OK
+Server: nginx/1.22.0
+Date: Wed, 01 Feb 2023 16:40:38 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Fri, 18 Nov 2022 12:30:11 GMT
+Connection: keep-alive
+ETag: "63777ad3-267"
+Accept-Ranges: bytes
+.
+.
+.
+```
+
+#### after deleting the ExternalService acess should stop working
+
+```bash
+kubectl --context=${MGMT_CONTEXT} -n bookinfo-config delete externalservice nginx-ec2-ext-svc;
+```
+
+```bash
+kubectl --context=${REMOTE_CONTEXT1} -n bookinfo exec -ti deploy/sleep -c sleep -- curl -i http://$NGINX_IP;
+```
+
+Output:
+```
+HTTP/1.1 502 Bad Gateway
+date: Wed, 01 Feb 2023 16:43:35 GMT
+server: envoy
+content-length: 0
+```
+
+#### Accessing an app directly by it's IP on HTTPS
+
+> Pre-req: Enabled TLS for the nginx runing on EC2. [docs](https://www.linode.com/docs/guides/getting-started-with-nginx-part-3-enable-tls-for-https/)
+
+`export NGINX_IP="3.22.233.162"`
+
+#### Access shouldn't work by default
+
+```bash
+kubectl --context=${REMOTE_CONTEXT1} -n bookinfo exec -ti deploy/sleep -c sleep -- curl -ik https://$NGINX_IP
+```
+
+Output:
+```bash
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 3.22.233.162:443
+command terminated with exit code 35
+```
+
+#### Create an ExternalService with IP address
+
+> TCP 443 should be the port
+
+```bash
+kubectl --context=${MGMT_CONTEXT} apply -f- <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: ExternalService
+metadata:
+  name: nginx-ec2-ext-svc-https
+  namespace: bookinfo-config
+spec:
+  addresses:
+  - "${NGINX_IP}"
+  ports:
+  - name: tcp
+    number: 443
+    protocol: TCP
+EOF
+```
+
+##### Access should work now
+```bash
+kubectl --context=${REMOTE_CONTEXT1} -n bookinfo exec -ti deploy/sleep -c sleep -- curl -ik https://$NGINX_IP
+```
+
+```bash
+HTTP/2 200
+server: nginx/1.22.0
+date: Wed, 01 Feb 2023 17:04:50 GMT
+content-type: text/html
+content-length: 615
+last-modified: Fri, 18 Nov 2022 12:30:11 GMT
+etag: "63777ad3-267"
+accept-ranges: bytes
+```
+
+##### After deleting the `ExternalService` access SHOULD NOT work
+
+```bash
+kubectl --context=${MGMT_CONTEXT} -n bookinfo-config delete externalservice nginx-ec2-ext-svc-https;
+```
+
+```bash
+kubectl --context=${REMOTE_CONTEXT1} -n bookinfo exec -ti deploy/sleep -c sleep -- curl -ik https://$NGINX_IP
+```
+
+Output:
+```bash
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to 3.22.233.162:443
+command terminated with exit code 35
+```
+
+#### Directly access ext svc via a hostname
+
+```bash
+kubectl apply --context ${MGMT_CONTEXT} -f- <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: ExternalService
+metadata:
+  name: google-ext-svc
+  namespace: bookinfo-config
+spec:
+  hosts:
+  - www.google.com
+  ports:
+  - name: tcp
+    number: 443
+    protocol: TCP
+EOF
+```
+
+```bash
+kubectl --context=${REMOTE_CONTEXT1} -n bookinfo exec -ti deploy/sleep -c sleep -- curl -ik https://www.google.com
+```
+Output-
+
+```bash
+HTTP/2 200
+date: Wed, 01 Feb 2023 19:10:13 GMT
+expires: -1
+cache-control: private, max-age=0
+content-type: text/html; charset=ISO-8859-1
+.
+.
+.
 ```
