@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: httpbin-ext-authz
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match: 
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter: 
+            name: envoy.filters.network.http_connection_manager
+        portNumber: 80
+    patch: 
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.ext_authz
+        typed_config:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+          grpc_service:
+            google_grpc:
+              stat_prefix: ext_authz
+              target_uri: '0.0.0.0:9000'
+          transport_api_version: V3
+          failure_mode_allow: false
+          with_request_body:
+            allow_partial_message: true 
+            max_request_bytes: 2048
+            pack_as_bytes: true
+  workloadSelector:
+    labels: 
+      app: httpbin
