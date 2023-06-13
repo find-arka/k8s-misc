@@ -67,6 +67,19 @@ metricscollectorCustomization:
         - prometheusremotewrite
 ```
 
+> Note:
+If Istio is installed via IstioOperator, we would have to run the following command to patch the configmap for OTel collector
+
+```bash
+kubectl get cm gloo-metrics-collector-config -n gloo-mesh -o yaml | sed "s|regex: pilot|regex: istiod|"  > patch.yaml | kubectl apply -f patch.yaml
+```
+
+Restart DaemonSet to pick up the above changes:
+
+```bash
+kubectl -n gloo-mesh rollout restart daemonset gloo-metrics-collector-agent
+```
+
 ## Import Istio Dashboards
 
 1. 7639 - https://grafana.com/grafana/dashboards/7639-istio-mesh-dashboard/ (Istio Mesh Dashboard)
