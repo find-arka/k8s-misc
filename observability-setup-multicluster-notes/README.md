@@ -1,7 +1,9 @@
+Setup Istio Dashboard for multicluster environment, with the help of Open Telemetry components and Gloo Mesh.
+
 ## Overview Diagram
 ![Overview Diagram](./images/overview.png)
 
-## Steps
+## Steps Overview
 
 1. Install Prometheus CRDS
 2. Install Thanos Receive, Thanos Query
