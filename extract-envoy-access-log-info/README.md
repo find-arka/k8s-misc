@@ -7,11 +7,20 @@
 ./extract-envoy-access-log-info.sh
 ```
 
-- Paste the output in the spreadsheet for better readability
+- Paste the output in the spreadsheet for better readability. 
 
-### Example
+- Here is how it would look:
+
+![sample](./images/spreadsheet-look.png)
+
+### Links
+- [Access log format](https://istio.io/latest/docs/tasks/observability/logs/access-log/#default-access-log-format)
+- [Access log values explanation](https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage)
+
+
+### Usage Example
 ```bash
-$ ./extract-envoy-access-log-info.sh
+./extract-envoy-access-log-info.sh
 ```
 
 ```bash
@@ -39,5 +48,3 @@ outbound_.8080_.instance-b_.mypaymentonlineportal-svc.my-ns.svc.cluster.local
 default
 ```
 
-[Access log format](https://istio.io/latest/docs/tasks/observability/logs/access-log/#default-access-log-format)
-[Access log values explanation](https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage)
