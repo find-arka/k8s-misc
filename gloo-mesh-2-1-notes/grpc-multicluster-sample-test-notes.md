@@ -225,11 +225,68 @@ Name Aoi Yuuki, Age: 26
 ```bash
 kubectl --context ${REMOTE_CONTEXT1} logs -f -n istio-grpc-example deployments/client-0 -c istio-proxy
 ```
+```json
+{
+  "authority": null,
+  "bytes_received": 9303,
+  "bytes_sent": 934320,
+  "connection_termination_details": null,
+  "downstream_local_address": "251.206.111.183:50051",
+  "downstream_remote_address": "10.129.2.44:50736",
+  "duration": 178908,
+  "method": null,
+  "path": null,
+  "protocol": null,
+  "request_id": null,
+  "requested_server_name": null,
+  "response_code": 0,
+  "response_code_details": null,
+  "response_flags": "-",
+  "route_name": null,
+  "start_time": "2023-07-20T17:48:06.057Z",
+  "upstream_cluster": "outbound|50051||istio-grpc-example.solo-io.mesh",
+  "upstream_host": "34.225.129.125:15443",
+  "upstream_local_address": "10.129.2.44:48356",
+  "upstream_service_time": null,
+  "upstream_transport_failure_reason": null,
+  "user_agent": null,
+  "x_forwarded_for": null
+}
+```
 
 2. E-W gateway in Cluster 2
 
 ```bash
 k --context ${REMOTE_CONTEXT2} logs -f -n istio-gateways deployments/istio-eastwestgateway
+```
+
+```json
+{
+  "authority": null,
+  "bytes_received": 17615,
+  "bytes_sent": 1624821,
+  "connection_termination_details": null,
+  "downstream_local_address": "10.131.0.30:15443",
+  "downstream_remote_address": "100.64.0.5:55542",
+  "duration": 178246,
+  "method": null,
+  "path": null,
+  "protocol": null,
+  "request_id": null,
+  "requested_server_name": "outbound_.50051_._.istio-grpc-example.solo-io.mesh",
+  "response_code": 0,
+  "response_code_details": null,
+  "response_flags": "-",
+  "route_name": null,
+  "start_time": "2023-07-20T17:48:06.155Z",
+  "upstream_cluster": "outbound_.50051_._.backend.istio-grpc-example.svc.cluster.local",
+  "upstream_host": "10.131.0.28:9090",
+  "upstream_local_address": "10.131.0.30:51376",
+  "upstream_service_time": null,
+  "upstream_transport_failure_reason": null,
+  "user_agent": null,
+  "x_forwarded_for": null
+}
 ```
 
 3. Service in Cluster 2
@@ -238,6 +295,34 @@ k --context ${REMOTE_CONTEXT2} logs -f -n istio-gateways deployments/istio-eastw
 kubectl --context ${REMOTE_CONTEXT2} logs -f -n istio-grpc-example deployments/backend-0 -c istio-proxy
 ```
 
+```json
+{
+  "authority": "istio-grpc-example.solo-io.mesh:50051",
+  "bytes_received": 19,
+  "bytes_sent": 5,
+  "connection_termination_details": null,
+  "downstream_local_address": "10.131.0.28:9090",
+  "downstream_remote_address": "10.131.0.30:51376",
+  "duration": 1,
+  "method": "POST",
+  "path": "/proto.CustomerService/AddPerson",
+  "protocol": "HTTP/2",
+  "request_id": "537b1d83-3185-47c6-8032-1bd2a24bb45e",
+  "requested_server_name": "outbound_.50051_._.istio-grpc-example.solo-io.mesh",
+  "response_code": 200,
+  "response_code_details": "via_upstream",
+  "response_flags": "-",
+  "route_name": "default",
+  "start_time": "2023-07-20T17:48:06.221Z",
+  "upstream_cluster": "inbound|9090||",
+  "upstream_host": "10.131.0.28:9090",
+  "upstream_local_address": "127.0.0.6:49731",
+  "upstream_service_time": "0",
+  "upstream_transport_failure_reason": null,
+  "user_agent": "grpc-python/1.19.0 grpc-c/7.0.0 (linux; chttp2; gold)",
+  "x_forwarded_for": null
+}
+```
 
 ### endpoints check
 
