@@ -89,3 +89,5 @@ kubectl -n gloo-mesh rollout restart daemonset gloo-metrics-collector-agent
 3. 7636 - https://grafana.com/grafana/dashboards/7636-istio-service-dashboard/ (Istio Service Dashboard)
 4. 7630 - https://grafana.com/grafana/dashboards/7630-istio-workload-dashboard/ (Istio Workload Dashboard)
 5. 7645 - https://grafana.com/grafana/dashboards/7645-istio-control-plane-dashboard/ (Istio Control Plane Dashboard)
+
+Istio docs on dashboards: https://istio.io/latest/docs/tasks/observability/metrics/using-istio-dashboard/
