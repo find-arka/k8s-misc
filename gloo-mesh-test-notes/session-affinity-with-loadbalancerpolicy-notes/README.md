@@ -332,8 +332,8 @@ kubectl --context arka-ocp-mgmt-cluster apply -f - << EOF
 apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: LoadBalancerPolicy
 metadata:
-  name: sticky-nginx-loadbalancer-policy
-  namespace: frontend-config
+  name: sticky-nginx-loadbalancer-policy-ingress
+  namespace: platform-core-config
 spec:
   applyToDestinations:
     - kind: SERVICE
