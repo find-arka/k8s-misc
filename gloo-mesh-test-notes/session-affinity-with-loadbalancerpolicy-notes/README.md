@@ -351,6 +351,13 @@ EOF
 
 ### Generated DestinationRule
 
+```bash
+kubectl --context arka-ocp-workload-cluster-1 get destinationrule \
+-n istio-gateways \
+-l gloo.solo.io/parent_name=nginx \
+-l gloo.solo.io/parent_kind=Service -o yaml
+```
+
 ```yaml
 apiVersion: v1
 items:
